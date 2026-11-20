@@ -20,7 +20,6 @@ from typing import Any
 PLACEHOLDER_RE = re.compile(r"\{((?:EV|KB)-\d{2,})\}")
 SECTION_KEYS = ("data_used", "why", "limits", "what_would_change")
 
-# Références autorisées sans emplacement : numéros de documents réglementaires et règles.
 DOCUMENT_REF_RE = re.compile(
     r"\b(?:NI|CSA|CIRO|IIROC|Notice|Avis|Regulation|Règlement|Policy|Instruction|GN|Rule|Règle|R)?[\s-]?"
     r"(?:\d{2}-\d{3}(?:CP)?|GN-\d{4}-\d{2}-\d{3}|\d{4}-\d{3}|R(?:10|[1-9]))\b"
@@ -28,14 +27,12 @@ DOCUMENT_REF_RE = re.compile(
 YEAR_RE = re.compile(r"\b(19[5-9]\d|20[0-4]\d)\b")
 SENTENCE_RE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Þ{«\"(])")
 
-# Nombre « écrit à la main » : décimal, pourcentage, montant, points de base, ratio.
 NUMBER_RE = re.compile(
     r"(?P<num>[-+−]?\d[\d\s  ]*(?:[.,]\d+)?)"
     r"\s?(?P<unit>%|\$|\$\s?US|bps?|pb|points? de base|basis points?|x\b|×|fois)?",
     re.IGNORECASE,
 )
 
-# « fourchette à 90 % » : niveau de la méthode de rééchantillonnage (consigne du rédacteur), pas un chiffre de résultat.
 METHOD_RESAMPLING_LEVEL = 90.0
 
 FORBIDDEN_PATTERNS = [
@@ -48,12 +45,7 @@ FORBIDDEN_PATTERNS = [
     r"\bconseiller financier\b", r"\bplanificateur financier\b", r"\bfinancial (?:advisor|adviser|planner)\b",
 ]
 
-# Affirmations de conformité ou de convenance (lot A). L'outil n'évalue pas la convenance (GN-3200-26-001, 2.1.1) :
-# dire qu'un scénario est conforme, convient ou « passe » en est une évaluation, et le dire négativement aussi
-# (« is not suitable for you », « non conforme »). Les formes viennent du texte réellement écrit par le rédacteur et
-# la traduction (traces Langfuse du 2026-11-15) en plus de la liste de la mission.
 JUDGEMENT_PATTERNS = [
-    # anglais
     r"\bnon-?compliant\b", r"\bcompliant\b", r"\bcomplies with\b", r"\bcomply with\b",
     r"\b(?:is|are|was|were) (?:not |un)?suitable\b", r"\bunsuitable\b", r"\bsuits? you\b",
     r"compatible with (?:your|the retained) (?:risk )?profile",
@@ -61,14 +53,12 @@ JUDGEMENT_PATTERNS = [
     r"\bfits? (?:the |your |this )?(?:retained |risk |stated )*(?:profile|mandate)\b",
     r"\b(?:consistent|in line) with (?:the |your )?(?:retained |risk )*profile\b",
     r"\b(?:in line|consistent) with \{(?:KB|EV)-\d{2,}\}",
-    # français
     r"\bconformes?\b", r"\bvous convient\b", r"\bconvien(?:t|nent) (?:à|a) (?:ce|cette|votre|ton|ta)\b",
     r"adapté(?:e|s|es)? à votre profil", r"compatible avec votre profil",
     r"\bcorrespond(?:ent)? au profil\b", r"\b(?:cohérent|cohérente|cohérents)s? avec le profil\b",
     r"\bconformément à \{(?:KB|EV)-\d{2,}\}", r"\ben phase avec \{(?:KB|EV)-\d{2,}\}",
 ]
 
-# Une phrase où l'outil dit qu'il ne juge pas est conservée (« Grow does not assess whether this suits you »).
 DISCLAIMER_PATTERN = (
     r"\b(?:does|do|will) not (?:assess|judge|evaluate|determine|say|decide|take a position)\b|\btakes? no position\b"
     r"|\bne (?:se )?prononce(?:nt)? pas\b|\bn'(?:évalue|apprécie|juge|établit) pas\b|\bne (?:juge|détermine|évalue) pas\b"
@@ -79,8 +69,6 @@ _JUDGEMENT = [re.compile(p, re.IGNORECASE) for p in JUDGEMENT_PATTERNS]
 _DISCLAIMER = re.compile(DISCLAIMER_PATTERN, re.IGNORECASE)
 
 
-# Symboles de l'univers (lot B) : une phrase du récit ne nomme que les symboles que l'utilisateur a écrits ou détient.
-# Exclus : codes de province, identifiants de règle, symboles d'une seule lettre (T, V, O… se confondent avec le texte).
 NON_SYMBOLS = frozenset({"ON", "QC", "BC", "AB", "SK", "MB", "NB", "NS", "PE", "NL", "YT", "NT", "NU"})
 RULE_ID_RE = re.compile(r"R\d+")
 
@@ -89,7 +77,6 @@ def symbol_pattern(universe: set[str]) -> re.Pattern[str] | None:
     symbols = sorted((t for t in universe if len(t) >= 2 and t not in NON_SYMBOLS and not RULE_ID_RE.fullmatch(t)), key=len, reverse=True)
     if not symbols:
         return None
-    # Mêmes bornes que rules._contains_ticker ; sensible à la casse (les mots courants ne sont pas des symboles).
     return re.compile(r"(?<![A-Za-z0-9.\-])(?:" + "|".join(re.escape(t) for t in symbols) + r")(?![A-Za-z0-9\-])")
 
 
@@ -110,7 +97,6 @@ def split_sentences(text: str) -> list[str]:
 
 def _normalize_number(raw: str) -> float | None:
     cleaned = raw.replace(" ", "").replace(" ", "").replace(" ", "").replace("−", "-")
-    # « 15,000 » (séparateur de milliers anglais) vs « 15,2 » (virgule décimale française).
     if re.fullmatch(r"[-+]?\d{1,3}(?:,\d{3})+", cleaned):
         cleaned = cleaned.replace(",", "")
     elif "," in cleaned and "." not in cleaned:
@@ -133,7 +119,7 @@ def mandate_constants(mandate: dict[str, Any]) -> set[float]:
         for key in ("amount", "weight"):
             if isinstance(op.get(key), (int, float)):
                 values.add(float(op[key]))
-    for item in (mandate.get("preferences") or {}).get("preferredIndustries") or []:  # mode build : minimums saisis
+    for item in (mandate.get("preferences") or {}).get("preferredIndustries") or []:
         if isinstance(item.get("minWeight"), (int, float)):
             values.add(float(item["minWeight"]))
     values.add(METHOD_RESAMPLING_LEVEL)
@@ -181,7 +167,7 @@ def verify_narrative(
     constants = mandate_constants(mandate)
     pattern = symbol_pattern(universe or set())
     allowed = set(held or set()) | {op["ticker"] for op in mandate.get("operations") or []}
-    allowed |= set(built or set())  # mode build : les titres du portefeuille construit, montrés dans la liste du scénario
+    allowed |= set(built or set())
     allowed |= {mandate["subjectTicker"]} if mandate.get("subjectTicker") else set()
     hidden: list[dict[str, str]] = []
     cleaned: list[dict[str, Any]] = []

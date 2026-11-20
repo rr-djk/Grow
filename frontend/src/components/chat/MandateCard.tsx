@@ -1,5 +1,3 @@
-/* Carte de mandat : affiche les champs d'un MandateCreateRequest (brouillon proposé par l'orchestrateur
- * ou mandat confirmé), avec la source de chaque ligne quand elle est connue (fieldSources du contrat). */
 import type { Mandate, MandateCreateRequest } from "../../api/types";
 import { t, warningText, type Lang } from "../../lib/i18n";
 import { categoryOf } from "../../lib/comparisonCategories";

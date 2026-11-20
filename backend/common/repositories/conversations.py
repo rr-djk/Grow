@@ -15,8 +15,6 @@ from backend.common.http import ApiError
 from backend.common.ids import new_session_id
 from backend.common.repositories import _dynamo
 
-# Nom de l'index secondaire local (clé de tri updatedAt). Le contrat ne le nomme
-# pas : l'infra (WS1) doit créer l'index avec ce nom exact (voir NOTES-db.md).
 UPDATED_AT_INDEX = "updatedAt-index"
 
 _NOT_FOUND_MESSAGE = "Conversation inconnue."
@@ -30,7 +28,6 @@ def _to_conversation(item: dict[str, Any]) -> dict[str, Any]:
         "createdAt": item["createdAt"],
         "updatedAt": item["updatedAt"],
     }
-    # schema-conversation : userLanguage (défaut en, appliqué par le lecteur).
     if item.get("userLanguage"):
         conversation["userLanguage"] = item["userLanguage"]
     return conversation

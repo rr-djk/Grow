@@ -1,6 +1,3 @@
-/* Formatage maison fr-CA / en-CA (stable entre serveur et navigateur). La langue est posée par LangProvider
- * (setFormatLang) avant chaque rendu : « 1 234,50 $ » en français, « $1,234.50 » en anglais. */
-
 const NBSP = "\u00a0";
 type L = "fr" | "en";
 let current: L = "fr";
@@ -50,7 +47,6 @@ export function fullDateTime(ts: number) {
   return `${fullDate(ts)}, ${clock(ts)}`;
 }
 
-/** Grands nombres : 82,47 G, 1,54 M, 867 k */
 export function compact(n: number) {
   const a = Math.abs(n);
   const [v, s] = a >= 1e12 ? [n / 1e12, "T"] : a >= 1e9 ? [n / 1e9, "G"] : a >= 1e6 ? [n / 1e6, "M"] : a >= 1e3 ? [n / 1e3, "k"] : [n, ""];
@@ -61,7 +57,6 @@ export function time(d: Date) {
   return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/** Montant avec code de devise : 1 234,50 CAD */
 export function amount(n: number, currency: string, decimals = 2) {
   return money(n, decimals) + NBSP + currency;
 }
@@ -70,12 +65,10 @@ export function signedAmount(n: number, currency: string) {
   return (n >= 0 ? "+" : "−") + amount(Math.abs(n), currency);
 }
 
-/** Pourcentage sans signe (le contrat donne des pourcentages : 9.07 = 9,07 %) */
 export function plainPct(n: number, decimals = 1) {
   return money(n, decimals) + pctUnit();
 }
 
-/** Date ISO (YYYY-MM-DD ou ISO 8601) → secondes Unix, pour Chart */
 export function toSeconds(iso: string) {
   return Math.floor(new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso).getTime() / 1000);
 }
@@ -84,22 +77,18 @@ export function dateTimeFr(iso: string) {
   return new Date(iso).toLocaleDateString(current === "en" ? "en-CA" : "fr-CA", { day: "numeric", month: "short" });
 }
 
-/** Date et heure complètes dans la langue d'affichage (ex. « Mis à jour : … »). */
 export function localeDateTime(iso: string) {
   return new Date(iso).toLocaleString(current === "en" ? "en-CA" : "fr-CA");
 }
 
-/** Date du jour en toutes lettres (en-tête du profil). */
 export function todayLong() {
   return new Date().toLocaleDateString(current === "en" ? "en-CA" : "fr-CA", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
 }
 
-/** Texte dans la langue d'affichage courante, hors composants React (messages d'erreur de l'API, de Cognito). */
 export function inLang(fr: string, en: string) {
   return current === "en" ? en : fr;
 }
 
-/** Deux-points typographique : « : » précédé d'une espace en français, collé en anglais. */
 export function colon() {
   return current === "en" ? ":" : " :";
 }

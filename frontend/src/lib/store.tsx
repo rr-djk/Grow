@@ -4,8 +4,6 @@ import { setSessionLostHandler } from "../api/client";
 import { getMe, putProfile } from "../api/endpoints";
 import type { InvestorProfile, User } from "../api/types";
 
-/* Session : Cognito pour les jetons, GET /v1/me pour l'utilisateur (userId = claim sub, jamais saisi par le front). */
-
 type Status = "loading" | "anon" | "authed";
 type Ctx = {
   status: Status;

@@ -3,7 +3,6 @@ import type { PointerEvent } from "react";
 import { fullDate, shortDate } from "../lib/format";
 import { useT } from "../lib/i18n";
 
-/* Courbe de prix épurée (aire dégradée, repère au survol). Reçoit des points déjà calculés par le back. */
 type P = { date: string; close: number };
 const W = 640, H = 240, PAD = 14;
 const ts = (d: string) => Date.parse(`${d}T12:00:00Z`) / 1000;

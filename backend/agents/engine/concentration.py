@@ -16,8 +16,6 @@ from backend.agents.engine.analytics import is_crypto, listing_currency
 
 TECH_SECTOR = "Information Technology"
 
-# Les onze secteurs GICS : seuls ces libellés comptent pour la concentration sectorielle. Les catégories de
-# FNB sans composition (« Broad market (Canada) », « Bonds (Canada aggregate) »…) ne sont pas des secteurs.
 GICS_SECTORS = {
     "Information Technology", "Health Care", "Financials", "Consumer Discretionary", "Communication Services",
     "Industrials", "Consumer Staples", "Energy", "Utilities", "Real Estate", "Materials",

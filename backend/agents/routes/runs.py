@@ -53,14 +53,11 @@ def create_run(event: dict[str, Any], user_id: str, store: DataStore, dispatcher
         trace_ctx = telemetry.inject_trace_context()
         payload = pipeline.completion_payload(user_id, session, run["runId"], trace_context=trace_ctx)
         if dispatcher is None:
-            # Pas de Lambda (banc local) : complétion dans la requête, puis renvoi du run partiel.
             pipeline.complete_run(store, user_id, session, run["runId"], trace_context=trace_ctx)
         else:
             try:
                 dispatcher(payload)
             except Exception as exc:
-                # Auto-invocation impossible (droit IAM absent…) : la partie déterministe reste
-                # utilisable ; status = error arrête la relecture du front au lieu d'attendre « done ».
                 log_event("run.dispatch_failed", sessionId=session, runId=run["runId"], error=type(exc).__name__)
                 analyses_repo.update_run(session, user_id, run["runId"], {"status": "error"})
         return json_response(201, run)

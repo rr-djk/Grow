@@ -20,11 +20,9 @@ from backend.common.http import json_response
 from backend.common.validation import parse_json_body, validate_speech_session
 
 LANGUAGE_CODES = {"fr": "fr-CA", "en": "en-US"}
-# Langue parlée détectée par Transcribe (0.4.10) : une seule variante par langue est acceptée
-# (fr-CA avec fr-FR est refusé). La langue de l'interface n'est que la langue préférée.
 LANGUAGE_OPTIONS = list(LANGUAGE_CODES.values())
 SAMPLE_RATE = 16000
-EXPIRES_IN = 300  # maximum accepté par Transcribe Streaming
+EXPIRES_IN = 300
 
 
 def _credentials() -> Any:

@@ -1,8 +1,3 @@
-/*
- * MODE DÉMO (VITE_DEMO=1 à la construction) : remplace Cognito et l'API /v1 par une simulation locale
- * qui respecte le contrat (mêmes routes, mêmes schémas, mêmes codes d'erreur). Données dans localStorage.
- * Prix et historiques FICTIFS. Sans VITE_DEMO, ce module n'est jamais appelé.
- */
 import { ApiError } from "./errors";
 import type {
   AgentsRegistry, Asset, AssetDetail, Conversation, Evidence, Explanation, Holding, InvestorProfile, Mandate,
@@ -12,16 +7,14 @@ import type {
 
 export const DEMO = import.meta.env.VITE_DEMO === "1";
 
-/* ---------- Base locale ---------- */
-
 type DemoUser = { userId: string; username: string; displayName?: string; email: string; password: string; investorProfile: InvestorProfile | null };
 type Analyses = { mandates: Mandate[]; runs: Record<string, Run> };
 type DB = {
-  users: Record<string, DemoUser>; // clé : username en minuscules
-  portfolios: Record<string, Portfolio[]>; // clé : userId
+  users: Record<string, DemoUser>;
+  portfolios: Record<string, Portfolio[]>;
   conversations: Record<string, Conversation[]>;
-  messages: Record<string, Message[]>; // clé : sessionId
-  analyses: Record<string, Analyses>; // clé : sessionId (mandats et runs)
+  messages: Record<string, Message[]>;
+  analyses: Record<string, Analyses>;
 };
 
 const DB_KEY = "af.demo.db";
@@ -56,14 +49,12 @@ function load(): DB {
   try {
     const v = JSON.parse(localStorage.getItem(DB_KEY) ?? "null");
     if (v && v.users) return v;
-  } catch { /* base illisible : on repart du jeu de départ */ }
+  } catch {  }
   const db = seed();
   save(db);
   return db;
 }
 const save = (db: DB) => localStorage.setItem(DB_KEY, JSON.stringify(db));
-
-/* ---------- Authentification simulée ---------- */
 
 const TOKEN_PREFIX = "demo.";
 
@@ -80,13 +71,11 @@ export function demoSignUp(username: string, password: string, email: string, di
   if (password.length < 8) throw new ApiError("VALIDATION_ERROR", "Mot de passe refusé : au moins 8 caractères.", 400);
   const userId = id("u");
   db.users[k] = { userId, username: username.trim(), displayName, email, password, investorProfile: null };
-  // Le portefeuille principal est créé au premier GET /portfolios, après le questionnaire investisseur.
   db.portfolios[userId] = [];
   db.conversations[userId] = [];
   save(db);
 }
 
-/** Suppression du compte simulé (équivalent de Cognito DeleteUser) : utilisateur, portefeuilles, sessions et messages. */
 export function demoDeleteUser(token: string) {
   const userId = token.startsWith(TOKEN_PREFIX) ? token.slice(TOKEN_PREFIX.length) : "";
   const db = load();
@@ -96,7 +85,6 @@ export function demoDeleteUser(token: string) {
   delete db.users[key]; delete db.portfolios[userId]; delete db.conversations[userId];
   save(db);
 }
-/* ---------- Univers d'actifs et prix fictifs ---------- */
 
 type DemoAsset = Asset & { price: number; vol: number; drift: number };
 const ASSETS: DemoAsset[] = [
@@ -113,7 +101,6 @@ const ASSETS: DemoAsset[] = [
   { ticker: "NVDA", name: "NVIDIA", assetClass: "equity", market: "NASDAQ", currency: "USD", sector: "Technologie", price: 142.8, vol: 0.5, drift: 0.25 },
   { ticker: "CASH", name: "Encaisse (CAD)", assetClass: "cash", currency: "CAD", sector: "Encaisse", price: 1, vol: 0, drift: 0 },
 ];
-/* Descriptions fictives courtes du mode démo (pas de données de marché). */
 const DESCRIPTIONS: Record<string, string> = {
   RY: "Banque Royale du Canada est la plus grande banque canadienne par capitalisation. Elle offre des services bancaires aux particuliers et aux entreprises, de la gestion de patrimoine, de l'assurance et des services de marchés des capitaux.",
   TD: "La Banque Toronto-Dominion offre des services bancaires aux particuliers, aux entreprises et aux grandes sociétés au Canada et aux États-Unis, où elle compte un vaste réseau de succursales.",
@@ -133,7 +120,6 @@ const asset = (t: string) => ASSETS.find((a) => a.ticker === t.toUpperCase());
 
 const RANGE_DAYS: Record<SummaryRange, number> = { "1m": 21, "6m": 126, "1y": 252, "5y": 1260 };
 
-/** Historique déterministe (même ticker → même courbe), qui se termine au prix actuel. */
 function history(a: DemoAsset, days: number): number[] {
   let s = [...a.ticker].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
   const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 2 ** 32; };
@@ -155,7 +141,7 @@ function summary(p: Portfolio, range: SummaryRange): PortfolioSummary {
   const value = values[values.length - 1] ?? 0;
   const prevDay = values[values.length - 2] ?? value;
   const cost = rows.reduce((s, { h, a }) => s + h.quantity * h.avgCost * fx(a.currency), 0);
-  const step = Math.max(1, Math.floor(values.length / 120)); // ~120 points max pour le graphique
+  const step = Math.max(1, Math.floor(values.length / 120));
   const dates = values.map((_, i) => new Date(Date.now() - (values.length - 1 - i) * 86400000 * (365 / 252)).toISOString().slice(0, 10));
 
   const holdings = rows.map(({ h, a }, j) => {
@@ -208,8 +194,6 @@ function demoExplanation(tool: string, params: Record<string, unknown>): Explana
   };
 }
 
-/* ---------- Orchestrateur simulé (v0.4.0 : cadrage → mandat confirmé → analyse) ---------- */
-
 const QUICK_REPLIES = ["Et si j'ajoutais un titre ?", "Rééquilibrer mon portefeuille", "Diagnostiquer mon portefeuille"];
 
 function detectMode(text: string): MandateMode | null {
@@ -234,7 +218,6 @@ function detectTicker(text: string): string | undefined {
   return ASSETS.find((a) => a.ticker.length > 2 && up.includes(a.ticker))?.ticker;
 }
 
-/** Mandat proposé : déduit du profil investisseur (persona) et du portefeuille, champs texte en anglais. */
 function draftFrom(u: DemoUser, p: Portfolio, mode: MandateMode, text: string): MandateCreateRequest {
   const prof = u.investorProfile;
   const subject = detectTicker(text);
@@ -262,7 +245,6 @@ const MODE_FR: Record<MandateMode, string> = { add_asset: "l'ajout d'un titre", 
 const JURISDICTIONS = ["CA", "QC", "ON", "BC", "AB", "SK", "MB", "NB", "NS", "PE", "NL", "YT", "NT", "NU"];
 const OBJECTIVES = ["growth", "income", "preservation", "project", "retirement"];
 
-/** Validation serveur (Lambda API, sans LLM) : enums, bornes, province ≠ CA, présence des champs requis. */
 function validateMandate(req: MandateCreateRequest, portfolios: Portfolio[]): void {
   const fail = (msg: string) => { throw new ApiError("VALIDATION_ERROR", msg, 422); };
   if (!req || typeof req !== "object") fail("Corps de la requête invalide.");
@@ -288,7 +270,6 @@ function validateMandate(req: MandateCreateRequest, portfolios: Portfolio[]): vo
   }
 }
 
-/** Champs dont la valeur a changé depuis la version précédente (contrat : changedFields). */
 function changedFields(prev: MandateCreateRequest, next: MandateCreateRequest): string[] {
   const keys = new Set([...Object.keys(prev), ...Object.keys(next)]);
   const out: string[] = [];
@@ -299,7 +280,6 @@ function changedFields(prev: MandateCreateRequest, next: MandateCreateRequest): 
   return out;
 }
 
-/** Réponse de l'orchestrateur simulé : cadrage (quickReplies), brouillon de mandat, ou suivi sur le registre. */
 function orchestratorReply(db: DB, u: DemoUser, sessionId: string, text: string): Message {
   const base = { sessionId, status: "done" as const, createdAt: now() };
   const p = db.portfolios[u.userId]?.[0];
@@ -309,7 +289,6 @@ function orchestratorReply(db: DB, u: DemoUser, sessionId: string, text: string)
     ? `${prof.riskTolerance ? `Votre profil indique une tolérance de ${prof.riskTolerance}/5 et une capacité de ${prof.riskCapacity ?? "?"}/5 (niveau retenu : ${Math.min(prof.riskTolerance, prof.riskCapacity ?? 5)}/5).` : "Votre profil n'indique pas encore la tolérance et la capacité de perte."}${prof.province ? ` Province : ${prof.province}.` : ""}`
     : "Votre profil investisseur n'est pas rempli (page Profil) : le mandat utilisera des valeurs par défaut prudentes.";
 
-  // 1. Cadrage : au plus une étape de questions, aucun calcul tant que le mandat n'est pas confirmé.
   if (!prior.length) {
     const welcome = p && p.holdings.length
       ? `Je comprends que vous voulez tester une idée. Je ne calcule rien et je ne suggère rien : je cadre votre intention en un mandat, puis j'audite l'analyse contre les textes réglementaires canadiens. ${profLine}`
@@ -317,7 +296,6 @@ function orchestratorReply(db: DB, u: DemoUser, sessionId: string, text: string)
     return { ...base, messageId: id("m"), role: "assistant", content: welcome, quickReplies: QUICK_REPLIES, explanation: demoExplanation("assistant.frame", { sessionId }) };
   }
 
-  // 2. Intention reconnue : brouillon de mandat à confirmer (aucun run lancé ici).
   const mode = detectMode(text);
   if (mode && p) {
     const draft = draftFrom(u, p, mode, text);
@@ -329,7 +307,6 @@ function orchestratorReply(db: DB, u: DemoUser, sessionId: string, text: string)
     };
   }
 
-  // 3. Suivi : réponse à partir du registre du dernier run, sans nouveau calcul.
   const lastRun = Object.values(db.analyses[sessionId]?.runs ?? {}).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   if (lastRun?.narrative) {
     const why = lastRun.narrative.sections.find((x) => x.key === "why")?.text ?? "";
@@ -338,8 +315,6 @@ function orchestratorReply(db: DB, u: DemoUser, sessionId: string, text: string)
   return { ...base, messageId: id("m"), role: "assistant", content: `Je n'ai encore rien calculé : confirmez d'abord un mandat (carte ci-dessus) ou utilisez les curseurs « et si ». ${profLine}`, explanation: demoExplanation("assistant.frame", { sessionId }) };
 }
 
-/* ---------- Analyse simulée (module-engine, règles, auditeur, rédacteur, vérificateur) ---------- */
-
 const DEMO_SOURCE = "Prix fictifs (mode démo)";
 const worstWindow = (v: number[], days: number) => {
   let w = 0;
@@ -347,9 +322,6 @@ const worstWindow = (v: number[], days: number) => {
   return w * 100;
 };
 
-/** Scénarios du run : 0 actuel, 1 idée telle quelle, 2 comparaison par catégorie SEULEMENT si le mandat
- *  porte compareCategory (0.4.5). Aucun symbole dans les textes du scénario 2 (R5) : libellé générique
- *  de la catégorie, description sans titre, proxyNote sans symbole. */
 function scenarioPortfolios(p: Portfolio, mandate: MandateCreateRequest): { holdings: { ticker: string; quantity: number }[]; label: string; description?: string; proxyNote?: string }[] {
   const cur = p.holdings.map(({ ticker, quantity }) => ({ ticker, quantity }));
   const out: { holdings: { ticker: string; quantity: number }[]; label: string; description?: string; proxyNote?: string }[] = [
@@ -373,7 +345,6 @@ function scenarioPortfolios(p: Portfolio, mandate: MandateCreateRequest): { hold
   return out;
 }
 
-/* Approximation de calcul du scénario 2 : n'apparaît jamais dans un libellé visible (R5, 0.4.5). */
 const PROXY_BY_CATEGORY: Record<NonNullable<MandateCreateRequest["compareCategory"]>, string> = {
   "short-term-bonds": "ZAG", "aggregate-bonds": "ZAG", "balanced-allocation": "ZAG",
   "canadian-equity": "XIC", "us-equity": "VFV", "global-equity": "XEF",
@@ -401,7 +372,6 @@ function scenarioValues(holdings: { ticker: string; quantity: number }[], days: 
   return series[0]?.map((_, i) => holdings.reduce((s, h, j) => s + h.quantity * series[j][i] * fx(asset(h.ticker)?.currency), 0)) ?? [];
 }
 
-/** Statistique d'un scénario : métriques fictives dérivées de l'historique fictif, marquées démo. */
 function metricsOf(values: number[]) {
   const rets = values.slice(1).map((v, i) => Math.log(v / values[i]));
   const mean = rets.reduce((a, b) => a + b, 0) / (rets.length || 1);
@@ -411,14 +381,12 @@ function metricsOf(values: number[]) {
   return { vol, mdd: mdd * 100, stress2022: worstWindow(values, 60) * 1.15, stressRates: worstWindow(values, 60) * 0.9 };
 }
 
-/** Preuve EV-nn d'une métrique de scénario. */
 function ev(id: string, kind: Evidence["kind"], label: string, value: number, scenario: number, extra: Partial<Evidence> = {}): Evidence {
   return { id, kind, label, value: round(value), formatted: `${value.toFixed(1)} %`, scenario, source: DEMO_SOURCE, asOf: now().slice(0, 10), caveats: ["Valeur fictive générée en mode démo."], ...extra };
 }
 
 function bandProfile(vol: number) { return vol <= 10 ? 1 : vol <= 14 ? 2 : vol <= 18 ? 3 : vol <= 25 ? 4 : 5; }
 
-/** Analyse complète d'un mandat confirmé : scénarios, preuves, verdicts (partial), puis narrative + vérificateur (done). */
 function buildRun(db: DB, u: DemoUser, sessionId: string, mandate: Mandate, runId: string): Run {
   const p = db.portfolios[u.userId]?.find((x) => x.portfolioId === mandate.mandate.portfolioId) ?? db.portfolios[u.userId]?.[0];
   const m = mandate.mandate;
@@ -469,7 +437,6 @@ function buildRun(db: DB, u: DemoUser, sessionId: string, mandate: Mandate, runI
       metrics: { volatility: ids.volatility, maxDrawdown: ids.maxDrawdown, stress2022: ids.stress2022, stressRates: ids.stressRates, topSingleWeight: ids.topSingleWeight, techWeightLookThrough: ids.techWeightLookThrough },
     });
     const cryptoWeight = scenarios[i].allocation?.find((a) => /crypto/i.test(a.label))?.weight ?? 0;
-    /* Verdicts du lot A : motifs sans vocabulaire d'approbation, citations réservées aux règles déclenchées. */
     const mk = (rule: string, status: "pass" | "warn" | "fail" | "not_verified", reasonCode: string, messageEn: string, evs: string[] = [], threshold?: { value: number; nature: "text" | "team_assumption" }) =>
       verdicts.push({ rule, scenario: i, status, reasonCode, evidence: evs, citations: [], ...(threshold ? { threshold } : {}), messageEn, message: messageEn } as Run["verdicts"][number]);
     mk("R1", r1Status, r1Status === "pass" ? "RISK_PROFILE_RESPECTED" : diff === 1 && i > 0 ? "IDEA_EXCEEDS_RISK_PROFILE" : "PORTFOLIO_EXCEEDS_RISK_PROFILE", `The scenario's volatility implies risk level ${implied} versus the retained level ${mandate.riskProfile}.`, [ids.volatility], { value: mandate.riskProfile, nature: "text" });
@@ -479,7 +446,6 @@ function buildRun(db: DB, u: DemoUser, sessionId: string, mandate: Mandate, runI
     mk("R7", cryptoWeight > 0 ? "warn" : "pass", cryptoWeight > 0 ? "CRYPTO_WITHIN_CAP" : "NO_CRYPTO_EXPOSURE", cryptoWeight > 0 ? "Crypto-asset exposure stays within the cap for this mandate, but crypto assets carry specific platform and custody risks." : "The scenario holds no crypto assets.", [], { value: 5, nature: "team_assumption" });
     mk("R8", "pass", "ESG_NOT_REQUESTED", "The mandate has no ESG preference.", []);
   });
-  /* Règles au niveau du run (lot B) : R4 ne peut plus échouer, la comparaison existe seulement sur demande. */
   const runVerdict = (rule: string, status: "pass" | "warn" | "fail" | "not_verified", reasonCode: string, messageEn: string) =>
     verdicts.push({ rule, status, reasonCode, evidence: [], citations: [], messageEn } as Run["verdicts"][number]);
   runVerdict("R4", "pass", m.compareCategory ? "COMPARISON_SHOWN" : "COMPARISON_NOT_REQUESTED", m.compareCategory ? "A comparison by asset category is shown as an additional scenario." : "No comparison by asset category was requested.");
@@ -493,8 +459,6 @@ function buildRun(db: DB, u: DemoUser, sessionId: string, mandate: Mandate, runI
   };
 }
 
-/* agent-auditor simulé : citations KB (titres réels du corpus, extrait simulé), puis rédacteur + vérificateur.
- * Les champs documentType / regulator / status (lot E2) sont présents comme dans le nouveau corpus. */
 const KB_DEMO: Evidence[] = [
   {
     id: "KB-01", kind: "regulation", label: "Avis conjoint 31-368 des ACVM et de l'OCRI", document: "Avis conjoint 31-368 (mode démo)", documentType: "staff_notice", regulator: "CSA", status: "en_vigueur",
@@ -513,8 +477,6 @@ const KB_DEMO: Evidence[] = [
   },
 ];
 
-/* Citations fixées (lot E2) : R5 à côté des mentions fixes, R9 à côté des mentions de la province.
- * Simulées : la variable KB_CORPUS_VERSION du backend décide en réel. */
 function demoNoticeCitations(province: string): { R5: string[]; R9: string[] } {
   const fixed = { R5: ["KB-03"], R9: ["KB-03"] };
   return fixed;
@@ -540,7 +502,6 @@ function narrativeFor(run: Run): Narrative {
   const evOf = (id: string) => run.evidence.find((e) => e.id === id);
   const vol1 = evOf(s1?.metrics?.volatility ?? ""), dd1 = evOf(s1?.metrics?.maxDrawdown ?? "");
   const vol2 = evOf(s2?.metrics?.volatility ?? "");
-  /* Vocabulaire descriptif (lot A) : ce que les règles ont fait, jamais une appréciation de l'idée. */
   const triggered = run.verdicts.filter((v) => v.scenario === 1 && (v.status === "warn" || v.status === "fail")).map((v) => v.rule);
   return {
     language: "fr",
@@ -555,18 +516,15 @@ function narrativeFor(run: Run): Narrative {
 }
 
 function verifierFor(run: Run): VerifierReport {
-  // Chaque emplacement des 4 rubriques compte comme résolu ; match EN/langue = true en démo.
   const all = run.narrative?.sections.map((s) => s.text + "\n" + s.textEn).join("\n") ?? "";
   const total = (all.match(/\{(EV|KB)-\d+\}/g) ?? []).length;
   return { placeholdersResolved: total, placeholdersTotal: total, handwrittenNumbers: 0, forbiddenPhrases: 0, placeholdersMatch: true };
 }
 
-/* ---------- Routeur /v1 ---------- */
-
 type Opts = { method?: string; query?: Record<string, string | number | undefined | null>; body?: any };
 
 export async function demoRequest(path: string, o: Opts, token: string): Promise<unknown> {
-  await new Promise((r) => setTimeout(r, 150)); // latence simulée
+  await new Promise((r) => setTimeout(r, 150));
   const db = load();
   const u = Object.values(db.users).find((x) => TOKEN_PREFIX + x.userId === token);
   if (!u) throw new ApiError("UNAUTHORIZED", "Session expirée.", 401);
@@ -657,7 +615,6 @@ export async function demoRequest(path: string, o: Opts, token: string): Promise
       return done({ userMessage, assistantMessage });
     }
 
-    /* v0.4.0 : mandats confirmés (Lambda API, sans LLM) et runs (Lambda agents). */
     const ana = (db.analyses[c.sessionId] ??= { mandates: [], runs: {} });
     if (seg[2] === "mandates") {
       if (seg.length === 3 && m === "GET") return { items: [...ana.mandates].sort((a, b) => b.version - a.version) };
@@ -666,7 +623,7 @@ export async function demoRequest(path: string, o: Opts, token: string): Promise
         validateMandate(req, portfolios);
         const prev = ana.mandates[ana.mandates.length - 1];
         const version = prev ? prev.version + 1 : 1;
-        const riskProfile = Math.min(req.riskTolerance, req.riskCapacity); // R1
+        const riskProfile = Math.min(req.riskTolerance, req.riskCapacity);
         const effectiveMaxLossPct = req.maxAcceptableLossPct ?? (req.horizonYears < 3 ? 10 : req.horizonYears <= 8 ? 20 : 35);
         const warnings: { code: string; message: string; params?: Record<string, number> }[] = [];
         const defaultLoss = req.horizonYears < 3 ? 10 : req.horizonYears <= 8 ? 20 : 35;
@@ -699,7 +656,6 @@ export async function demoRequest(path: string, o: Opts, token: string): Promise
       }
       if (seg.length === 4 && m === "GET") {
         const run = ana.runs[seg[3]] ?? (() => { throw new ApiError("RUN_NOT_FOUND", "", 404); })();
-        // Affichage progressif : le run complet arrive ~4 s après sa création.
         if (run.status === "partial" && Date.now() - new Date(run.createdAt).getTime() > 4000) {
           const full = completeRun(run);
           ana.runs[run.runId] = full;

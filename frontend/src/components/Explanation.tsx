@@ -3,10 +3,6 @@ import { useT } from "../lib/i18n";
 import { ruleBadgeClass, ruleLabel } from "../lib/ruleLabels";
 import RuleItem from "./chat/RuleItem";
 
-/** Affiche tel quel le champ explanation renvoyé par le back (contrat : toujours affiché).
- *  Libellés fixes traduits ; sources, étapes, hypothèses et limites viennent du back.
- *  0.4.4 : les contrôles portent reasonCode et scenario ; l'agentId reste dans « Étapes exécutées ».
- *  Chaque contrôle est replié sur une ligne ; « Voir plus » affiche son message. */
 export default function Explanation({ data, defaultOpen = false }: { data: Expl; defaultOpen?: boolean }) {
   const { t, lang } = useT();
   const checks = data.checks ?? [];

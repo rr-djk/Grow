@@ -4,7 +4,6 @@ import growLogo from "../assets/grow-logo.svg";
 import { useT } from "../lib/i18n";
 import LangSwitch from "./LangSwitch";
 
-/** En-tête des pages sans session (même présentation que le prototype). `actions` : liens à droite (accueil). */
 export default function PublicHeader({ actions = false }: { actions?: boolean }) {
   const { t, L } = useT();
   return (
@@ -27,7 +26,6 @@ export default function PublicHeader({ actions = false }: { actions?: boolean })
   );
 }
 
-/** Carte centrée des pages de connexion et d'inscription (Shell du prototype). */
 export function AuthShell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <>

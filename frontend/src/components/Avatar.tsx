@@ -1,4 +1,3 @@
-/* Petite bulle ronde avec une icône propre à chaque personne (choisie de façon stable à partir de son identifiant). */
 const ICONS = ["🦊", "🐼", "🦉", "🐬", "🦁", "🐢", "🦋", "🐙", "🦄", "🐧", "🦒", "🐝"];
 const TINTS = ["#E5F3EB", "#E8EFFB", "#FDF1DC", "#F8E6EE", "#EDE8FA", "#E3F4F4"];
 

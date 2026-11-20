@@ -1,7 +1,3 @@
-/* Choix d'une catégorie d'actifs pour la comparaison (scénario 2, lot B, contrat 0.4.5).
- * Liste triée par niveau, SANS présélection (GN-3200-26-001, 2.1.1 et 3.2) et sans symbole de FNB.
- * Choisir une catégorie crée une NOUVELLE VERSION du mandat avec compareCategory, exactement
- * comme les curseurs « et si » ; « Retirer la comparaison » crée une version sans ce champ. */
 import { categoriesByLevel, isCategoryId, type ComparisonCategoryId } from "../../lib/comparisonCategories";
 import { t, type Lang } from "../../lib/i18n";
 
@@ -54,5 +50,4 @@ export default function CompareCategory({ lang, currentId, onChoose, onRemove, o
   );
 }
 
-/* Garde-fou : un identifiant inconnu n'est jamais envoyé au backend (VALIDATION_ERROR). */
 export const safeCategoryId = (v: string): ComparisonCategoryId | null => (isCategoryId(v) ? v : null);

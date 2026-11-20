@@ -1,5 +1,3 @@
-/* Fiche d'un actif (style épuré) : prix, courbe, repères et description.
- * Tout vient de GET /market/assets/{ticker} : le front ne calcule que la position dans la fourchette 52 semaines. */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";

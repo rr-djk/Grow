@@ -32,8 +32,6 @@ from backend.common.validation import parse_json_body, session_id
 MAX_CONTENT = 2000
 ISO_RE = re.compile(r"^[a-z]{2}$")
 
-# Gabarits de repli du refus : utilisés pour une donnée personnelle (le texte n'est jamais transmis à un
-# modèle), quand l'orchestrateur échoue ou quand le filtre de sortie retient son refus.
 TOPIC_KEYS = {
     "Trade execution orders": "orders",
     "Guaranteed or promised returns": "returns",
@@ -177,7 +175,7 @@ def post_message(event: dict[str, Any], user_id: str, store: DataStore) -> dict[
 
         draft = ctx.captured.get("mandateDraft")
         if draft is not None:
-            draft = {**draft, "userLanguage": language}  # langue d'affichage détectée à ce tour
+            draft = {**draft, "userLanguage": language}
         used_registry = any(c["tool"] == "read_evidence" for c in ctx.tool_calls)
         explanation = build_explanation(
             ctx,

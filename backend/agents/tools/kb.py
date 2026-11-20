@@ -20,7 +20,6 @@ KNOWN_SUBJECTS = (
     "aide_decision", "recommandation", "titres_proteges", "relation_client", "cadrage", "questions_investisseur",
 )
 
-# Titres des documents du corpus (docs/for_KB/README.md), en anglais.
 DOCUMENT_TITLES = {
     "CA_21-329": "CSA/IIROC Staff Notice 21-329 (crypto-asset trading platforms)",
     "CA_21-332": "CSA Staff Notice 21-332 (crypto-asset trading platforms, pre-registration undertakings)",
@@ -38,15 +37,11 @@ DOCUMENT_TITLES = {
 }
 
 MAX_PASSAGES = 5
-# Un passage de la base (300 jetons) mesure jusqu'à ~2 400 caractères (relevé du 2026-11-15) : le plafond laisse tenir un
-# passage entier, toujours coupé à une fin de phrase. (1 200 puis 700 coupaient la majorité des passages en pleine phrase.)
 MAX_EXCERPT_CHARS = 2400
 
-# Seuls les textes de régulateurs se citent (GN-3200-26-001 : un courtier n'est pas une source de la règle).
 CITABLE_REGULATORS = ("CSA", "CSA-IIROC", "CSA-CIRO", "CSA-AMF", "CIRO", "FSRA", "AMF", "FCAA")
 
 
-# Abréviations des textes de loi et des avis : un point qui les suit n'est pas une fin de phrase.
 _ABBREVIATIONS = {
     "s", "ss", "sec", "secs", "art", "arts", "no", "nos", "para", "paras", "subs", "ch", "cl", "pt", "pp", "p",
     "c", "cf", "vs", "v", "inc", "ltd", "corp", "co", "dr", "mr", "mrs", "ms", "st", "fig", "ex", "eg", "ie", "etc",
@@ -64,7 +59,7 @@ def _is_sentence_end(head: str, match: re.Match[str]) -> bool:
         return True
     if word.group(1).lower() in _ABBREVIATIONS:
         return False
-    if len(word.group(1)) == 1 and word.group(1).isupper():  # initiale (« J. Smith »)
+    if len(word.group(1)) == 1 and word.group(1).isupper():
         return False
     return True
 
@@ -104,7 +99,7 @@ def build_filter(jurisdictions: list[str], subjects: list[str] | None, strict_ci
     clauses: list[dict[str, Any]] = [{"in": {"key": "juridiction", "value": jurisdictions}}]
     if strict_citable is None:
         strict_citable = bool(config.kb_corpus_version())
-    if strict_citable:  # nouveau corpus ingéré : chaque fichier porte `citable`
+    if strict_citable:
         clauses.append({"equals": {"key": "citable", "value": True}})
     valid = [s for s in subjects or [] if s in KNOWN_SUBJECTS]
     if len(valid) == 1:
@@ -140,7 +135,7 @@ def is_citable(metadata: dict[str, Any]) -> bool:
         return False
     if config.kb_corpus_version():
         return False
-    return metadata.get("regulateur") in CITABLE_REGULATORS  # repli de transition, à retirer avec l'ancien préfixe
+    return metadata.get("regulateur") in CITABLE_REGULATORS
 
 
 def section_label(metadata: dict[str, Any], page: Any = None, document: str | None = None) -> str | None:
@@ -151,7 +146,7 @@ def section_label(metadata: dict[str, Any], page: Any = None, document: str | No
         return f"s. {section} {title}".strip() if title else f"s. {section}"
     pages = metadata.get("pages")
     title = metadata.get("section_titre")
-    if title and title != document:  # partie sans numéro (préambule, résumé) : son titre, jamais un numéro inventé ; pas le titre du document
+    if title and title != document:
         return f"{title} (page {pages})" if pages else title
     if pages:
         return f"page {pages}"
@@ -181,17 +176,14 @@ def retrieve(query: str, jurisdictions: list[str], subjects: list[str] | None = 
         passages = []
         for result in response.get("retrievalResults", []):
             metadata = result.get("metadata") or {}
-            # Le filtre du mandat est refait ici : un passage sans juridiction dans ses métadonnées,
-            # ou hors de {CA, province}, est jeté (défense en profondeur, jamais cité).
             if metadata.get("juridiction") not in jurisdictions:
                 continue
-            if not is_citable(metadata):  # documents de courtier, notes de bas de page : jamais cités
+            if not is_citable(metadata):
                 continue
             if len(passages) >= MAX_PASSAGES:
                 break
             uri = (result.get("location") or {}).get("s3Location", {}).get("uri") or metadata.get("x-amz-bedrock-kb-source-uri")
             page = metadata.get("x-amz-bedrock-kb-document-page-number")
-            # Extrait fidèle (registre, jamais traduit) ; la version neutralisée est celle montrée au modèle.
             excerpt = excerpt_of((result.get("content") or {}).get("text", ""))
             passages.append({
                 "document": document_title(uri),

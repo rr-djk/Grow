@@ -1,7 +1,6 @@
 import { inLang } from "../lib/format";
 import type { ErrorCode } from "./types";
 
-/** Erreur au format schema-error : { error: { code, message, requestId } } */
 export class ApiError extends Error {
   constructor(public code: ErrorCode, message: string, public status: number, public requestId?: string) {
     super(message);
@@ -36,7 +35,6 @@ const LABELS_EN: Partial<Record<ErrorCode, string>> = {
   NETWORK: "The server is unreachable. Check your connection.",
 };
 
-/** Message affichable : celui du serveur s'il existe, sinon un libellé par code. */
 export function errorText(e: unknown): string {
   if (e instanceof ApiError) {
     const labels = inLang("fr", "en") === "en" ? LABELS_EN : LABELS;

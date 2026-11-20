@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { isComplete, QUESTIONS, qLabel, qOptions } from "../lib/risk";
 import { useT } from "../lib/i18n";
 type Answers = Record<string, number>;
-/* Questionnaire personnel de l'accueil : les cinq questions de risque, sans province ni compte. */
 export default function PersonalQuestionnaire({
   initial = {}, submitLabel, onSubmit,
 }: { initial?: Answers; submitLabel: string; onSubmit: (a: Answers) => void }) {

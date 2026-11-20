@@ -3,7 +3,6 @@
 Chaque paragraphe est précédé d'un commentaire qui dit pourquoi il existe.
 """
 
-# Phrase exigée mot pour mot par le contrat (agents.agent-orchestrator.system_prompt_must_include).
 LANGUAGE_RULE = (
     "If the user's message is not in English, translate it into English before doing anything else; "
     "all tool calls and all communication with other components are in English. When replying to the user, "
@@ -80,8 +79,6 @@ def translate_fix_prompt(items_json: str) -> str:
     )
 
 
-# Refus expliqué : le Guardrail a bloqué la demande, l'orchestrateur n'a rien exécuté. Il ne reçoit que
-# le nom du sujet bloqué et le message de l'utilisateur (jamais une donnée personnelle).
 REFUSAL_SYSTEM_PROMPT = """You write the short refusal shown to the user of an educational investment simulation when a safety filter blocked their message. Nothing here is financial advice and no order is ever placed.
 
 Write 2 or 3 sentences, in this order:

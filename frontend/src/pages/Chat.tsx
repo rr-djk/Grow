@@ -1,7 +1,3 @@
-/* Page /chat : session en 2 colonnes du contrat (srv-frontend) :
- *   1. conversation (quickReplies, carte de mandat proposé)
- *   2. panneau de simulation (scénarios, verdicts, citations, explication)
- * plus le menu latéral d'historique. Le front ne calcule rien : chiffres de /summary et du registre du run. */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ApiError, errorText } from "../api/errors";
@@ -18,11 +14,9 @@ import { LangContext, t, useT } from "./../lib/i18n";
 const POLL_MS = 2000;
 const tmpId = () => `tmp-${Date.now()}`;
 
-/** Premier message de l'onboarding (0.4.16) : envoyé par le front, visible dans la conversation. */
 function onboardingSeed(lang: "fr" | "en", amount?: number): string {
   const money = amount ? (lang === "en" ? `$${Math.round(amount).toLocaleString("en-CA")}` : `${Math.round(amount).toLocaleString("fr-CA")} $`) : "";
   if (lang === "en") return `Build me a first fictitious portfolio${money ? ` of ${money} CAD` : ""} from my profile, and explain how it works.`;
-  // Pas de « à partir de mon profil » : cette tournure déclenche le sujet « conseil personnalisé » du Guardrail en français.
   return `Construis-moi un premier portefeuille fictif${money ? ` de ${money} CA` : ""}, et explique-moi comment ça fonctionne.`;
 }
 
@@ -30,19 +24,17 @@ export default function Chat() {
   const nav = useNavigate();
   const location = useLocation();
   const seeded = useRef(false);
-  /* --- historique (menu latéral) --- */
   const [sessions, setSessions] = useState<Conversation[]>([]);
   const [q, setQ] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeRef = useRef<string | null>(null);
   activeRef.current = activeId;
 
-  /* --- données de la session --- */
   const [messages, setMessages] = useState<Message[]>([]);
   const [mandate, setMandate] = useState<Mandate | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
-  const { lang } = useT(); // langue de l'interface (bouton FR | EN) ; le chatbot répond dans la langue de l'utilisateur
+  const { lang } = useT();
   const [mobilePanel, setMobilePanel] = useState<"history" | "conversation" | "simulation">("conversation");
 
   const [loading, setLoading] = useState(false);
@@ -50,20 +42,18 @@ export default function Chat() {
   const [error, setError] = useState("");
   const [refusal, setRefusal] = useState<{ id: number; sent: string; message: string } | null>(null);
 
-  /* --- historique : liste des sessions --- */
   useEffect(() => {
-    listConversations().then((p) => setSessions(p.items)).catch(() => { /* le rail reste vide */ });
+    listConversations().then((p) => setSessions(p.items)).catch(() => {  });
   }, []);
 
   const refreshMandate = useCallback(async (sessionId: string) => {
     try {
-      const { items } = await listMandates(sessionId); // plus récent d'abord
+      const { items } = await listMandates(sessionId);
       setMandate(items[0] ?? null);
       return items[0] ?? null;
     } catch { setMandate(null); return null; }
   }, []);
 
-  /* --- ouverture d'une session : messages, mandat, portefeuille, dernier run --- */
   const openSession = useCallback(async (sessionId: string | null) => {
     setActiveId(sessionId); activeRef.current = sessionId;
     setMessages([]); setMandate(null); setRun(null); setRunId(null); setError(""); setRefusal(null);
@@ -72,7 +62,7 @@ export default function Chat() {
     try {
       const all: Message[] = [];
       let cursor: string | undefined;
-      for (let i = 0; i < 20; i++) { // ordre chronologique : toutes les pages
+      for (let i = 0; i < 20; i++) {
         const p = await listMessages(sessionId, cursor);
         all.push(...p.items);
         if (!p.nextCursor) break;
@@ -99,7 +89,6 @@ export default function Chat() {
     }
   }, [refreshMandate, sessions]);
 
-  /* --- envoi d'un message (cadrage, suivi, « et si » en texte libre) --- */
   const send = useCallback(async (text: string) => {
     if (!text.trim() || busy) return;
     setError(""); setRefusal(null); setBusy(true);
@@ -119,11 +108,9 @@ export default function Chat() {
       if (activeRef.current !== sid) return;
       setMessages((m) => [...m.filter((x) => x.messageId !== optimistic.messageId), r.userMessage, r.assistantMessage]);
       if (r.assistantMessage.runId) setRunId(r.assistantMessage.runId);
-      // L'orchestrateur fixe userLanguage à la première réponse : la colonne suit.
       setSessions((l) => l.map((c) => (c.sessionId === sid ? { ...c, updatedAt: r.assistantMessage.createdAt } : c)));
     } catch (e) {
       if (activeRef.current === sid) setMessages((m) => m.filter((x) => x.messageId !== optimistic.messageId));
-      // Refus de Guardrail : encart sous le champ (rien n'est enregistré), texte remis dans le champ pour être reformulé.
       if (e instanceof ApiError && e.code === "GUARDRAIL_BLOCKED") setRefusal({ id: Date.now(), sent: text, message: errorText(e) });
       else setError(errorText(e));
     } finally {
@@ -131,7 +118,6 @@ export default function Chat() {
     }
   }, [busy]);
 
-  /* --- onboarding (0.4.16) : arrivée depuis le questionnaire → premier message envoyé une seule fois (StrictMode). */
   useEffect(() => {
     const onboarding = (location.state as { onboarding?: { amount?: number } } | null)?.onboarding;
     if (!onboarding || seeded.current) return;
@@ -140,7 +126,6 @@ export default function Chat() {
     void send(onboardingSeed(lang === "en" ? "en" : "fr", onboarding.amount));
   }, [location, nav, send, lang]);
 
-  /* --- adoption (0.4.16) : copie le portefeuille construit dans « main » ; quantités et prix viennent du moteur. */
   const adopt = useCallback(async (s: Scenario) => {
     if (busy) return;
     const holdings = (s.holdings ?? []).filter((h) => h.quantity && h.price).map((h) => ({ ticker: h.symbol, quantity: h.quantity!, avgCost: h.price! }));
@@ -158,7 +143,6 @@ export default function Chat() {
     }
   }, [busy, lang, nav]);
 
-  /* --- confirmation d'un mandat (brouillon modifié ou curseurs) : POST mandates puis POST runs --- */
   const confirmMandate = useCallback(async (m: MandateCreateRequest) => {
     const sid = activeRef.current;
     if (!sid || busy) return;
@@ -182,7 +166,6 @@ export default function Chat() {
     }
   }, [busy, lang]);
 
-  /* --- relecture du run : partial → done (affichage progressif) --- */
   useEffect(() => {
     const sid = activeRef.current;
     if (!runId || !sid || run?.status !== "partial") return;
@@ -192,15 +175,13 @@ export default function Chat() {
         if (activeRef.current !== sid) return;
         setRun(r);
         if (r.status === "done") {
-          // Le message de l'assistant qui porte le run affiche ses emplacements : preuves à jour.
           setMessages((ms) => ms.map((m) => (m.runId === runId ? { ...m } : m)));
         }
-      } catch { /* nouvelle tentative au prochain cycle */ }
+      } catch {  }
     }, POLL_MS);
     return () => clearTimeout(timer);
   }, [run, runId]);
 
-  /* --- comparaison par catégorie (lot B) : nouvelle version du mandat puis analyse, comme les curseurs. */
   const runCompare = useCallback(async (req: { compareCategory?: import("./../lib/comparisonCategories").ComparisonCategoryId }) => {
     const sid = activeRef.current;
     const base = mandate?.mandate;
@@ -210,7 +191,6 @@ export default function Chat() {
     await confirmMandate(next);
   }, [mandate, busy, confirmMandate]);
 
-  /* --- ancien run (sans rulesVersion) : relance de l'analyse sur le même mandat (lot A). */
   const rerunOld = useCallback(async (mandateVersion: number) => {
     const sid = activeRef.current;
     if (!sid || busy) return;
@@ -222,7 +202,6 @@ export default function Chat() {
     } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
   }, [busy]);
 
-  /* --- historique : renommer et supprimer une session (PATCH / DELETE /v1/conversations/{sessionId}) --- */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -233,12 +212,12 @@ export default function Chat() {
     setEditingId(null);
     const before = sessions.find((x) => x.sessionId === sessionId);
     if (!title || title === (before?.title ?? "")) return;
-    setSessions((list) => list.map((x) => (x.sessionId === sessionId ? { ...x, title } : x))); // affichage immédiat
+    setSessions((list) => list.map((x) => (x.sessionId === sessionId ? { ...x, title } : x)));
     try {
       const updated = await renameConversation(sessionId, title);
       setSessions((list) => list.map((x) => (x.sessionId === sessionId ? { ...x, ...updated } : x)));
     } catch (e) {
-      setSessions((list) => list.map((x) => (x.sessionId === sessionId && before ? before : x))); // retour au titre précédent
+      setSessions((list) => list.map((x) => (x.sessionId === sessionId && before ? before : x)));
       setRailError(errorText(e));
     }
   }, [draftTitle, sessions]);
@@ -250,7 +229,7 @@ export default function Chat() {
       if (activeRef.current === sessionId) void openSession(null);
     } catch (e) {
       if (e instanceof ApiError && e.code === "CONVERSATION_NOT_FOUND") {
-        setSessions((list) => list.filter((x) => x.sessionId !== sessionId)); // déjà supprimée ailleurs
+        setSessions((list) => list.filter((x) => x.sessionId !== sessionId));
         if (activeRef.current === sessionId) void openSession(null);
       } else setRailError(errorText(e));
     }

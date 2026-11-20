@@ -1,5 +1,3 @@
-/* Classes d'actifs du jeu de données (assets_universe) : codes envoyés à l'API et libellés affichés.
- * « Classes d'actifs exclues » du profil : une liste de ces codes (« crypto » est lu par le moteur, voir scenarios.py). */
 export const ASSET_CLASSES: { code: string; fr: string; en: string }[] = [
   { code: "equity", fr: "Actions", en: "Stocks" },
   { code: "etf_equity", fr: "FNB d'actions", en: "Equity ETFs" },
@@ -15,8 +13,6 @@ const OTHER: Record<string, { fr: string; en: string }> = {
   cash: { fr: "Encaisse", en: "Cash" },
 };
 
-/** Libellé d'un code de classe ; un code inconnu (ancien texte libre) s'affiche tel quel. */
-/** Catégories de la recherche (Marchés) : « etf » regroupe tous les FNB. */
 export const SEARCH_CLASSES: { code: string; fr: string; en: string }[] = [
   { code: "equity", fr: "Action", en: "Stock" },
   { code: "etf", fr: "FNB", en: "ETF" },

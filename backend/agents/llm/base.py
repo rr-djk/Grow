@@ -56,7 +56,7 @@ class ToolCallLimit(HookProvider):
 
     def _check(self, event: BeforeToolCallEvent) -> None:
         if isinstance(event.selected_tool, StructuredOutputTool):
-            return  # la sortie structurée n'est pas un outil de l'agent : la compter l'annulerait quand le plafond est atteint
+            return
         with self._lock:
             self.count += 1
             if self.count > self.limit:
@@ -87,7 +87,7 @@ def build_agent(agent_id: str, system_prompt: str, ctx: RequestContext, *, with_
         trace_attrs["langfuse.user.id"] = ctx.user_id
     return Agent(
         model=model,
-        name=agent_id,  # contrat : name = id de l'agent ; la section va dans les attributs de trace
+        name=agent_id,
         system_prompt=system_prompt,
         tools=tools,
         messages=messages or [],
@@ -129,8 +129,6 @@ def run_agent(agent_id: str, system_prompt: str, prompt: str, ctx: RequestContex
         raise AgentFailure(agent_id, "max_tokens") from exc
     finally:
         timer.cancel()
-        # Étape observée pour explanation (rule-explanation-from-trace) : l'invocation elle-même,
-        # même si l'agent n'a appelé aucun outil. Ce n'est pas une ligne tool.call.
         ctx.tool_calls.append({
             "agentId": agent_id, "tool": "agent_invocation", "params": {"output": output_model.__name__, **({"section": label} if label else {})},
             "status": status, "durationMs": int((time.perf_counter() - started) * 1000),

@@ -7,10 +7,6 @@ import { colon } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { useApp } from "../lib/store";
 
-/*
- * L'inscription crée uniquement le compte Cognito. Le questionnaire investisseur est présenté
- * ensuite sur /portefeuille, juste avant la création du portefeuille principal.
- */
 type Step = "account" | "done";
 
 export default function Register() {
@@ -25,7 +21,6 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const finishing = useRef(false);
 
-  // Un utilisateur déjà connecté n'a rien à faire ici (sauf pendant la fin du parcours).
   if (status === "authed" && !finishing.current) return <Navigate to="/portefeuille" replace />;
 
   const set = (k: keyof typeof f) => (e: ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });

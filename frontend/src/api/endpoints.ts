@@ -1,4 +1,3 @@
-/* Une fonction par route du contrat (section apis). Le front ne calcule rien : il affiche ce que ces routes renvoient. */
 import { request } from "./client";
 import type {
   AgentsRegistry, Asset, AssetDetail, Conversation, Holding, InvestorProfile, Mandate, MandateCreateRequest,
@@ -38,7 +37,6 @@ export const getAssetDetail = (ticker: string, range: SummaryRange, signal?: Abo
   request<AssetDetail>(`/market/assets/${enc(ticker)}`, { query: { range }, signal });
 export const getAgentsRegistry = () => request<AgentsRegistry>("/agents");
 
-/* v0.4.0 : mandats (Lambda API, sans LLM) et runs (Lambda agents) */
 export const createMandate = (sessionId: string, mandate: MandateCreateRequest) =>
   request<Mandate>(`/conversations/${enc(sessionId)}/mandates`, { method: "POST", body: mandate });
 export const listMandates = (sessionId: string) =>
@@ -49,6 +47,5 @@ export const createRun = (sessionId: string, mandateVersion: number) =>
 export const getRun = (sessionId: string, runId: string) =>
   request<Run>(`/conversations/${enc(sessionId)}/runs/${enc(runId)}`);
 
-/* v0.4.8 : saisie vocale. URL WebSocket signée vers Amazon Transcribe Streaming (300 s). */
 export const startSpeechSession = (lang: "fr" | "en") =>
   request<SpeechSession>("/speech/session", { method: "POST", body: { lang } });

@@ -23,9 +23,7 @@ from backend.agents.verifier.verifier import SECTION_KEYS
 
 AGENT_ID = "agent-writer"
 
-# Sections qui ne dépendent pas de l'auditeur (aucune citation) : lancées en même temps que lui.
 EARLY_KEYS = ("data_used", "limits")
-# Sections qui lisent les verdicts audités et les KB-nn : lancées dès que l'auditeur a fini.
 LATE_KEYS = ("why", "what_would_change")
 
 

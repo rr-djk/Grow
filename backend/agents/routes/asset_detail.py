@@ -16,7 +16,7 @@ from backend.agents.engine import analytics
 from backend.common.http import ApiError, json_response
 
 RANGES = {"1m": pd.DateOffset(months=1), "6m": pd.DateOffset(months=6), "1y": pd.DateOffset(years=1), "5y": pd.DateOffset(years=5)}
-MAX_POINTS = 120  # points du graphique : assez pour une courbe lisse, léger sur le réseau
+MAX_POINTS = 120
 YEAR_DAYS = 365
 
 
@@ -51,7 +51,6 @@ def build_asset_detail(store: DataStore, ticker: str, range_key: str) -> dict[st
     periods = analytics.periods_per_year(ticker, asset_class)
 
     shown = _thin(window)
-    # La courbe est ramenée au dernier prix : même forme que adjclose, lisible en dollars.
     scale = float(close.iloc[-1] / adj.iloc[-1])
     points = [{"date": d.strftime("%Y-%m-%d"), "close": _num(v * scale, 4)} for d, v in shown.items()]
 

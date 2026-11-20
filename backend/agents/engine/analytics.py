@@ -86,8 +86,8 @@ class AlignedPrices:
     frame: pd.DataFrame
     start: pd.Timestamp | None
     end: pd.Timestamp | None
-    shortened_by: list[str]  # tickers dont l'historique raccourcit la fenêtre
-    missing: list[str]  # tickers sans aucune donnée sur la fenêtre
+    shortened_by: list[str]
+    missing: list[str]
 
 
 def aligned_cad_prices(
@@ -128,7 +128,6 @@ def aligned_cad_prices(
         calendar = idx if calendar is None else calendar.intersection(idx)
     frame = pd.DataFrame(index=calendar)
     for ticker, series in columns.items():
-        # Crypto échantillonnée sur le calendrier commun (elle cote tous les jours).
         frame[ticker] = series.reindex(calendar)
     frame = frame.dropna(how="any")
     if frame.empty:

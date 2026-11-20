@@ -17,7 +17,6 @@ from backend.agents.rules.settings import settings
 
 ORDER = {"pass": 0, "not_verified": 0, "warn": 1, "fail": 2}
 
-# Nom de la règle en anglais (sujet KB et requête de l'auditeur).
 RULE_TOPICS = {
     "R1": "risk profile is the lower of risk tolerance and risk capacity",
     "R2": "investment time horizon and maximum acceptable loss in suitability",
@@ -45,8 +44,6 @@ RULE_SUBJECTS = {
 }
 
 
-# Verdicts « sans objet » : le mandat ne contient ni cryptoactif ni préférence ESG. Une recherche
-# réglementaire ne trouverait rien qui les fonde (constaté : citations vides) ; R10 n'a aucun sujet.
 NO_SEARCH_REASONS = {"NO_CRYPTO_EXPOSURE", "ESG_NOT_REQUESTED"}
 
 
@@ -74,7 +71,7 @@ def infer_subjects(query: str) -> list[str]:
         overlap = len(words & set(topic.lower().replace("-", " ").split()))
         if overlap > best_overlap:
             best_rule, best_overlap = rule, overlap
-    return list(RULE_SUBJECTS[best_rule]) if best_rule else []  # inconnu : pas de repli vers un autre corpus
+    return list(RULE_SUBJECTS[best_rule]) if best_rule else []
 
 
 def _verdict(rule: str, scenario: int | None, status: str, reason: str, message: str,
@@ -101,8 +98,6 @@ def r1(mandate_item: dict[str, Any], scenario: ScenarioAnalysis) -> dict[str, An
     excess = max(excess_portfolio, excess_assets)
     evidence = _ev(scenario, "volatility")
     if scenario.index and excess_assets > 0 and excess_assets >= excess_portfolio:
-        # Le verdict vient de la volatilité du titre de l'idée, pas de celle du portefeuille :
-        # on cite d'abord la preuve du titre (celle qui fonde le verdict), puis celle du portefeuille.
         driving = [a["evidence"] for a in scenario.idea_assets if a["band"] and a["band"] - profile == excess_assets and a.get("evidence")]
         evidence = driving + evidence
     if scenario.index == 0:
@@ -122,8 +117,6 @@ def r1(mandate_item: dict[str, Any], scenario: ScenarioAnalysis) -> dict[str, An
 def r2(mandate_item: dict[str, Any], scenario: ScenarioAnalysis) -> dict[str, Any]:
     limit = float(mandate_item["effectiveMaxLossPct"])
     user_set = "maxAcceptableLossPct" in mandate_item["mandate"]
-    # Valeur saisie par l'utilisateur : ni texte réglementaire ni hypothèse d'équipe,
-    # donc sans `nature` (écart noté dans NOTES-agents.md).
     threshold = {"value": limit} if user_set else {"value": limit, "nature": "team_assumption"}
     if "maxDrawdown" not in scenario.metrics:
         return _verdict("R2", scenario.index, "not_verified", "DRAWDOWN_NOT_COMPUTED",
@@ -165,7 +158,6 @@ def r6(scenario: ScenarioAnalysis) -> dict[str, Any]:
     sector_label, sector_weight = top_sector(scenario.concentration)
     sector_warn = float(conf.get("sectorWarnPct", 0) or 0)
     if sector_warn and status == "pass" and sector_weight > sector_warn:
-        # Hypothèse d'équipe : un seul secteur (par transparence) au-delà du seuil = avertissement (jamais un échec).
         threshold = {"value": sector_warn, "nature": "team_assumption"}
         status, reason = "warn", "SECTOR_CONCENTRATION_ELEVATED"
         message = "A single sector, including through fund holdings, carries a large share of the portfolio."
@@ -228,7 +220,6 @@ def run_level_rules(result: EngineResult, scenario_verdicts: list[dict[str, Any]
                     universe_tickers: set[str]) -> list[dict[str, Any]]:
     verdicts = []
     mandate = mandate_item["mandate"]
-    # R4 : la comparaison par catégorie n'existe que sur demande de l'utilisateur ; la règle ne peut plus échouer.
     has_comparison = any(s.index == 2 for s in result.scenarios)
     if not mandate.get("compareCategory"):
         verdicts.append(_verdict("R4", None, "pass", "COMPARISON_NOT_REQUESTED", "No comparison by asset category was requested."))
@@ -238,10 +229,9 @@ def run_level_rules(result: EngineResult, scenario_verdicts: list[dict[str, Any]
         verdicts.append(_verdict("R4", None, "not_verified", "COMPARISON_UNAVAILABLE",
                                  "The requested comparison could not be built from the dataset."))
 
-    # R5 : aucun symbole de titre dans le texte visible sans clic, sauf ceux que l'utilisateur a écrits ou détient.
     own = set(result.scenarios[0].positions_cad) | {op["ticker"] for op in mandate.get("operations") or []}
     own |= {mandate["subjectTicker"]} if mandate.get("subjectTicker") else set()
-    if mandate.get("mode") == "build":  # le portefeuille construit est montré en liste ; ses symboles ne sont pas des « titres nommés »
+    if mandate.get("mode") == "build":
         own |= {symbol for scenario in result.scenarios if scenario.index == 1 for symbol in scenario.positions_cad}
     texts = " ".join(visible_texts(result))
     named = sorted(t for t in universe_tickers if t and t not in own and _contains_ticker(texts, t))
@@ -251,11 +241,9 @@ def run_level_rules(result: EngineResult, scenario_verdicts: list[dict[str, Any]
         verdicts.append(_verdict("R5", None, "pass", "NO_SECURITY_RECOMMENDED",
                                  "No security symbol appears in the visible scenario texts: the rule was not triggered."))
 
-    # R9 : mentions de la province (texte dans jurisdictionNotices).
     verdicts.append(_verdict("R9", None, "pass", "PROVINCE_NOTICES_ADDED",
                              "Province notices name the regulator and the protected titles this tool does not use."))
 
-    # R10 : aucune donnée macro avant sa date de publication.
     late = [u for u in result.macro_usage if u.get("publication") is not None and u["publication"] > u["asOf"]]
     if late:
         verdicts.append(_verdict("R10", None, "fail", "MACRO_USED_BEFORE_PUBLICATION", "A macroeconomic value was used before its publication date."))

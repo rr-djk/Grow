@@ -1,7 +1,3 @@
-/* Panneau de simulation (colonne 3 de /chat) : scénarios 0/1/2 côte à côte, règles R1-R10 avec
- * libellé par motif (lot A), les 4 rubriques du récit, le score du vérificateur, les mentions R9,
- * les citations fixées de R5/R9 (lot E2) et les mentions fixes du lot D.
- * Affichage progressif : tout ce qui existe en status = partial s'affiche déjà ; le reste arrive à done. */
 import { useState } from "react";
 import type { RuleVerdict, Run, Scenario } from "../../api/types";
 import { money } from "../../lib/format";
@@ -17,7 +13,6 @@ import TickerLogo from "../TickerLogo";
 
 const SCENARIO_LABEL_KEY = ["sim.scenario.current", "sim.scenario.idea", "sim.scenario.alternative"] as const;
 
-/** Une colonne de scénario : label, décompte des règles (calculé ici, plus de pastille), répartition, mesures. */
 function ScenarioCard({ run, s, lang }: { run: Run; s: Scenario; lang: Lang }) {
   const metric = (evId?: string) => run.evidence.find((e) => e.id === evId);
   const summary = scenarioRuleSummary(run.verdicts, s.index, lang);
@@ -65,7 +60,6 @@ function ScenarioCard({ run, s, lang }: { run: Run; s: Scenario; lang: Lang }) {
   );
 }
 
-/** Mode build : portefeuille construit en liste à puces (pas de graphique), chaque chiffre relié à sa preuve EV-nn. */
 function BuiltPortfolio({ run, s, lang }: { run: Run; s: Scenario; lang: Lang }) {
   const ev = (id?: string) => run.evidence.find((e) => e.id === id);
   const fmt = (template: string, values: Record<string, string | number | undefined>) =>
@@ -107,7 +101,6 @@ function BuiltPortfolio({ run, s, lang }: { run: Run; s: Scenario; lang: Lang })
   );
 }
 
-/** Adoption (0.4.16) : copie du portefeuille construit dans « main ». Les quantités et prix viennent du moteur : rien n'est calculé ici. */
 function AdoptCard({ s, lang, busy, onAdopt, onLater }: { s: Scenario; lang: Lang; busy?: boolean; onAdopt: () => void; onLater: () => void }) {
   if (!s.holdings?.length || s.holdings.some((h) => !(h.quantity && h.price))) return null;
   return (
@@ -122,16 +115,12 @@ function AdoptCard({ s, lang, busy, onAdopt, onLater }: { s: Scenario; lang: Lan
   );
 }
 
-/** Règles R1-R10 par scénario, une ligne par règle : nom et libellé du motif (lot A), badge neutre pour
- *  « non déclenchée ». « Voir plus » déroule le motif, le seuil et les citations ; citations seulement pour
- *  une règle déclenchée (lot A : les anciens runs en contiennent sur des pass). */
 function RuleTable({ run, lang }: { run: Run; lang: Lang }) {
   const byScenario = new Map<number, RuleVerdict[]>();
   for (const v of run.verdicts) {
     const k = v.scenario ?? -1;
     (byScenario.get(k) ?? byScenario.set(k, []).get(k)!).push(v);
   }
-  // Les citations sous une règle non déclenchée se liraient comme un accord (GN-3200-26-001, 2.1.1).
   const citationsOf = (v: RuleVerdict): string[] =>
     v.status === "warn" || v.status === "fail" ? (v.citations ?? []) : [];
   const groupTitle = (sc: number) => sc < 0
@@ -174,7 +163,6 @@ function RuleTable({ run, lang }: { run: Run; lang: Lang }) {
 
 const SECTION_ORDER = ["data_used", "why", "limits", "what_would_change"] as const;
 
-/** Citations fixées par le code du backend (lot E2) : à côté des mentions, jamais sous une règle. */
 function NoticeCitations({ run, lang, rule, titleKey }: { run: Run; lang: Lang; rule: "R5" | "R9"; titleKey: string }) {
   const ids = run.noticeCitations?.[rule];
   if (!ids?.length) return null;
@@ -188,7 +176,6 @@ function NoticeCitations({ run, lang, rule, titleKey }: { run: Run; lang: Lang; 
   );
 }
 
-/** Mentions fixes du lot D : affichées à chaque affichage de résultats, y compris en partial. */
 function FixedNotices({ run, lang }: { run: Run; lang: Lang }) {
   return (
     <div className="notice" role="note">
@@ -203,15 +190,10 @@ function FixedNotices({ run, lang }: { run: Run; lang: Lang }) {
 export default function SimulationPanel({ run, lang, compareCategory, horizonYears, onCompare, onRerun, onAdopt, onAdoptLater, busy }: {
   run: Run | null;
   lang: Lang;
-  /** Horizon du mandat confirmé (fait affiché dans la carte « Points à examiner »). */
   horizonYears?: number;
-  /** compareCategory du mandat confirmé actuel (lot B) : sert au bouton « Retirer la comparaison ». */
   compareCategory?: string;
-  /** Présent = le bouton de comparaison est actif ; reçoit la nouvelle version du mandat à confirmer. */
   onCompare?: (req: { compareCategory?: import("../../lib/comparisonCategories").ComparisonCategoryId }) => void;
-  /** Ancien run (sans rulesVersion) : relance l'analyse sur le même mandat. */
   onRerun?: () => void;
-  /** Mode build : « Adopter ce portefeuille » (0.4.16). Absent = pas de bouton. */
   onAdopt?: (s: Scenario) => void;
   onAdoptLater?: () => void;
   busy?: boolean;

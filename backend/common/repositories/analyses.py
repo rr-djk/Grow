@@ -31,13 +31,10 @@ RUN_PREFIX = "RUN#"
 TYPE_MANDATE = "mandate"
 TYPE_RUN = "run"
 
-# Réessais de put_mandate quand un appel concurrent a pris la version visée.
 MAX_VERSION_ATTEMPTS = 5
 
-# Attributs techniques stockés mais jamais renvoyés.
 _INTERNAL_FIELDS = ("userId", "type", "itemKey")
 
-# Champs qu'update_run ne peut pas modifier (clé, propriété, identité du run).
 _IMMUTABLE_RUN_FIELDS = frozenset({"sessionId", "itemKey", "userId", "type", "runId"})
 
 
@@ -134,7 +131,7 @@ def put_mandate(session_id: str, user_id: str, mandate: dict[str, Any]) -> dict[
             )
         except ClientError as exc:
             if _dynamo.is_conditional_failure(exc):
-                continue  # version prise par un appel concurrent : on relit
+                continue
             raise
         return _public(item)
     raise ApiError("INTERNAL", "Conflit de version du mandat, réessayez.")

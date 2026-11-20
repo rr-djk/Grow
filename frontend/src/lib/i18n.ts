@@ -1,6 +1,3 @@
-/* Libellés fixes de l'interface : clés stables traduites côté front (contrat conventions.language_policy).
- * Les textes générés (narrative, motifs de verdict, quickReplies) arrivent déjà dans userLanguage :
- * ils ne passent pas par ce module. Les extraits réglementaires s'affichent en anglais (mention « extrait original »). */
 import { createContext, createElement, useCallback, useContext, useState, type ReactNode } from "react";
 import { setFormatLang } from "./format";
 
@@ -126,7 +123,6 @@ export const FR: Record<string, string> = {
   "sim.rule.threshold": "Seuil",
   "sim.rule.citations": "Citations",
   "sim.rules.run": "Toute l'analyse",
-  /* Noms courts des règles, affichés sur la ligne repliée (le motif complet est derrière « Voir plus »). */
   "rule.name.R1": "Profil de risque",
   "rule.name.R2": "Perte maximale",
   "rule.name.R3": "Impact sur le portefeuille",
@@ -565,19 +561,15 @@ const DICTS: Record<Lang, Record<string, string>> = { fr: FR, en: EN };
 
 export const LangContext = createContext<Lang>("fr");
 
-/** t("mandate.objective.growth", lang) → libellé traduit ; clé absente → la clé elle-même (jamais un chiffre inventé). */
 export function t(key: string, lang: Lang): string {
   return DICTS[lang]?.[key] ?? FR[key] ?? key;
 }
 
-/** Nom court d'une règle (R1 à R10) ; règle inconnue → chaîne vide (aucun nom inventé). */
 export function ruleName(rule: string, lang: Lang): string {
   const key = `rule.name.${rule}`;
   return DICTS[lang]?.[key] ?? FR[key] ?? "";
 }
 
-/** Avertissement du mandat dans la langue d'affichage : libellé du code avec ses paramètres ;
- *  code inconnu ou ancienne chaîne → message du serveur (anglais), jamais un texte inventé. */
 export function warningText(w: string | { code: string; message: string; params?: Record<string, string | number> }, lang: Lang): string {
   if (typeof w === "string") return w;
   const key = `mandate.warning.${w.code}`;
@@ -589,37 +581,31 @@ export function warningText(w: string | { code: string; message: string; params?
 const LangSetterContext = createContext<(l: Lang) => void>(() => {});
 const LANG_KEY = "af.lang";
 
-/** Langue d'affichage initiale : choix mémorisé, sinon langue du navigateur. */
 function initialLang(): Lang {
   try {
     const v = localStorage.getItem(LANG_KEY);
     if (v === "fr" || v === "en") return v;
-  } catch { /* stockage indisponible */ }
+  } catch {  }
   return langOf(typeof navigator !== "undefined" ? navigator.language : "fr");
 }
 
-/** Langue de toute l'interface (bouton FR | EN de l'en-tête). Elle ne pilote pas la langue du chatbot,
- *  qui répond dans la langue de l'utilisateur. */
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
-  setFormatLang(lang); // formats de nombres et de dates, lus pendant le rendu
+  setFormatLang(lang);
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem(LANG_KEY, l); } catch { /* stockage indisponible */ }
+    try { localStorage.setItem(LANG_KEY, l); } catch {  }
     if (typeof document !== "undefined") document.documentElement.lang = l;
   }, []);
   return createElement(LangSetterContext.Provider, { value: setLang }, createElement(LangContext.Provider, { value: lang }, children));
 }
 
-/** Hook pratique dans l'arbre sous LangContext.
- *  `L(fr, en)` : texte propre à un écran, écrit à côté de sa traduction (sans clé du dictionnaire). */
 export function useT() {
   const lang = useContext(LangContext);
   const setLang = useContext(LangSetterContext);
   return { lang, setLang, t: (key: string) => t(key, lang), L: (fr: string, en: string) => (lang === "en" ? en : fr) };
 }
 
-/** Détecte la langue d'affichage d'une conversation : userLanguage si reconnu, sinon fr. */
 export function langOf(userLanguage?: string | null): Lang {
   return userLanguage?.toLowerCase().startsWith("en") ? "en" : "fr";
 }

@@ -21,11 +21,8 @@ SOURCE_LANGUAGE = "en"
 TARGET_LANGUAGE = "fr-CA"
 REGION = "us-east-1"
 
-# Ce que Translate ne doit pas toucher : emplacements, puis passages entre guillemets (droits ou typographiques).
-# Un passage cité qui contient un emplacement est protégé d'un seul bloc (l'alternative la plus à gauche l'emporte).
 _PROTECTED = re.compile(r"\{(?:EV|KB)-\d{2,}\}|\"[^\"]*\"|“[^”]*”|«[^»]*»")
 _TAG = re.compile(r"<[^>]*>")
-# Translate supprime parfois l'espace qui précède ou suit un segment protégé (constaté : « voir{KB-01} »).
 _GLUED_BEFORE = re.compile(r"(?<=[A-Za-zÀ-ÿ0-9,;:])(\{(?:EV|KB)-\d{2,}\})")
 _GLUED_AFTER = re.compile(r"(\{(?:EV|KB)-\d{2,}\})(?=[A-Za-zÀ-ÿ])")
 
@@ -93,8 +90,6 @@ def translate(client: Any, text: str, terminology: str | None) -> tuple[str, boo
     return call([]), False
 
 
-# --- contrôles après traduction -------------------------------------------------------------------------------------
-
 
 def _digits(text: str) -> Counter[str]:
     """Les nombres « écrits à la main » d'un texte, réduits à leurs chiffres (15,000 $ et 15 000 $ s'égalent)."""
@@ -107,8 +102,6 @@ def problem(english: str, french: str) -> tuple[str, str] | None:
         return "empty", "The translation is empty."
     if Counter(placeholders(english)) != Counter(placeholders(french)):
         return "placeholders", f"Expected placeholders {sorted(placeholders(english))}, found {sorted(placeholders(french))}."
-    # Une formule déjà présente dans la source (par exemple le titre réservé « financial planner » cité tel quel)
-    # n'est pas un défaut de la traduction : le vérificateur la traite de toute façon sur le texte affiché.
     new_phrases = forbidden_phrases(french) if not forbidden_phrases(english) else []
     if new_phrases:
         return "forbidden_phrase", f"Forbidden wording: {new_phrases}."

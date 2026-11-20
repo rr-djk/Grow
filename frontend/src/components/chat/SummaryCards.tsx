@@ -1,7 +1,3 @@
-/* Trois cartes en tête de l'analyse (idée 1). Elles décrivent des faits chiffrés et des seuils,
- * jamais un jugement : GN-3200-26-001 §2.1 (un client raisonnable ne doit pas y lire une approbation),
- * §3.1.1 (information factuelle seulement) et §3.1.3 (sortie en termes généraux, avertissement explicite).
- * Tous les chiffres viennent du registre de preuves du run ; le front ne calcule rien. */
 import type { RuleVerdict, Run } from "../../api/types";
 import { t, type Lang } from "../../lib/i18n";
 import { ruleBadgeClass, ruleLabel } from "../../lib/ruleLabels";

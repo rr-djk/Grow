@@ -12,7 +12,6 @@ import Portfolio from "./pages/Portfolio";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 
-/* Sans session (déconnexion, session expirée, lien ouvert directement) : retour à l'accueil. Publiques : /, /login, /inscription, /explorer (questionnaire sans compte). */
 export function Private({ children }: { children: ReactNode }) {
   const { status } = useApp();
   if (status === "loading") return <p className="muted" style={{ padding: 48 }}>Chargement…</p>;

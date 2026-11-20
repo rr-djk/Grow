@@ -1,12 +1,3 @@
-/*
- * Catégories d'actifs de la comparaison (scénario 2, lot B, contrat 0.4.5).
- * Copie de `id` et `level` de backend/common/comparison_categories.json (vérifiée par
- * comparisonCategories.test.ts), triée par niveau, SANS présélection et SANS symbole de FNB :
- * les `proxies` du backend ne servent qu'au calcul et ne s'affichent jamais dans l'interface
- * (R5 : aucun symbole dans un texte visible sans clic).
- * L'utilisateur choisit la catégorie ; l'orchestrateur ne la met jamais lui-même.
- */
-
 export type ComparisonCategoryId =
   | "short-term-bonds" | "aggregate-bonds" | "balanced-allocation"
   | "canadian-equity" | "us-equity" | "global-equity";
@@ -22,7 +13,6 @@ export const COMPARISON_CATEGORIES: ComparisonCategory[] = [
   { id: "global-equity", level: 4, label: { fr: "Actions mondiales larges", en: "Broad global equity" } },
 ];
 
-/** Liste triée par niveau croissant (ordre d'affichage du choix, sans présélection). */
 export const categoriesByLevel = (): ComparisonCategory[] =>
   [...COMPARISON_CATEGORIES].sort((a, b) => a.level - b.level || a.id.localeCompare(b.id));
 

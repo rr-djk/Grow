@@ -1,6 +1,3 @@
-/* « Explorer sans compte » : questionnaire personnel (les cinq questions de risque de l'inscription, une seule
- * échelle de 1 à 5), puis le résultat. Calcul local seulement : rien n'est envoyé à l'API. Les réponses restent
- * dans l'onglet (sessionStorage) et pré-remplissent le questionnaire de création du portefeuille après l'inscription. */
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import PersonalQuestionnaire from "../components/PersonalQuestionnaire";

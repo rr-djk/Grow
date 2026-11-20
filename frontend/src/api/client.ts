@@ -5,7 +5,7 @@ import { ApiError } from "./errors";
 import type { ErrorCode } from "./types";
 
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
-const PREFIX = "/v1"; // conventions.api_base_path
+const PREFIX = "/v1";
 
 let onSessionLost: () => void = () => {};
 export const setSessionLostHandler = (fn: () => void) => { onSessionLost = fn; };

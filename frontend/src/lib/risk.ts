@@ -1,16 +1,9 @@
-/* Questionnaire de profil de risque : chaque réponse vaut de 1 à 5 points (score total : 5 à 25).
- * v0.4.6 : UNE SEULE échelle de risque 1 à 5 — la tolérance (ce que la personne accepte de subir) vient
- * de la question « Perte maximale acceptable », la capacité (ce qu'elle peut encaisser) de la question
- * « Capacité financière ». Le niveau retenu (R1, avis 31-368) est le plus bas des deux, partout :
- * accueil, profil, mandat, R1, catégorie de comparaison. L'ancienne échelle à quatre libellés
- * (riskLevel) n'est plus envoyée à l'API. La description des niveaux est dans lib/riskScale.ts. */
 import { EMPTY_INDUSTRIES, industryPrefs, type IndustryChoice } from "./industries";
 import { EMPTY_ESG_MARKET, esgMarketPrefs, type EsgMarketChoice } from "./esgMarket";
 import type { InvestorProfile, Jurisdiction } from "../api/types";
 
-export type Question = { id: string; label: string; options: string[]; labelEn: string; optionsEn: string[] }; // options[i] vaut i + 1 point
+export type Question = { id: string; label: string; options: string[]; labelEn: string; optionsEn: string[] };
 type Lang = "fr" | "en";
-/** Libellé et options d'une question dans la langue d'affichage (la valeur enregistrée reste l'index). */
 export const qLabel = (q: Question, lang: Lang) => (lang === "en" ? q.labelEn : q.label);
 export const qOptions = (q: Question, lang: Lang) => (lang === "en" ? q.optionsEn : q.options);
 
@@ -45,10 +38,9 @@ export const QUESTIONS: Question[] = [
     ] },
 ];
 
-export const SCORE_MIN = QUESTIONS.length;     // 5
-export const SCORE_MAX = QUESTIONS.length * 5; // 25
+export const SCORE_MIN = QUESTIONS.length;
+export const SCORE_MAX = QUESTIONS.length * 5;
 
-/* Provinces reconnues par le contrat (conventions.jurisdictions), sans CA (textes nationaux, pas une province). */
 export const PROVINCES: { code: Jurisdiction; label: string; en: string }[] = [
   { code: "QC", label: "Québec", en: "Quebec" }, { code: "ON", label: "Ontario", en: "Ontario" }, { code: "BC", label: "Colombie-Britannique", en: "British Columbia" },
   { code: "AB", label: "Alberta", en: "Alberta" }, { code: "SK", label: "Saskatchewan", en: "Saskatchewan" }, { code: "MB", label: "Manitoba", en: "Manitoba" },
@@ -57,13 +49,11 @@ export const PROVINCES: { code: Jurisdiction; label: string; en: string }[] = [
   { code: "YT", label: "Yukon", en: "Yukon" }, { code: "NT", label: "Territoires du Nord-Ouest", en: "Northwest Territories" }, { code: "NU", label: "Nunavut", en: "Nunavut" },
 ];
 
-/** Nom d'une province dans la langue d'affichage. */
 export const provinceName = (code: Jurisdiction, lang: Lang) => PROVINCES.find((p) => p.code === code)?.[lang === "en" ? "en" : "label"] ?? code;
 
 export const PROVINCE_LABELS: Record<Jurisdiction, string> =
   Object.fromEntries(PROVINCES.map((p) => [p.code, p.label])) as Record<Jurisdiction, string>;
 
-/** Score total : somme des points (1 à 5) de chaque réponse. `answers` = index d'option (0 à 4) par question. */
 export function totalScore(answers: Record<string, number>): number {
   return QUESTIONS.reduce((sum, q) => sum + answers[q.id] + 1, 0);
 }
@@ -72,7 +62,6 @@ export type PortfolioRisk = { score: number; answers: Record<string, number>; pr
 
 const key = (userId: string) => `af.risk.${userId}`;
 
-/** Résultats stockés par portefeuille pour un utilisateur : { [portfolioId]: PortfolioRisk }. */
 export function loadRisk(userId: string): Record<string, PortfolioRisk> {
   try {
     const v = JSON.parse(localStorage.getItem(key(userId)) ?? "{}");
@@ -82,7 +71,6 @@ export function loadRisk(userId: string): Record<string, PortfolioRisk> {
 
 const latestKey = (userId: string) => `af.risk.latest.${userId}`;
 
-/** Dernier résultat de l'utilisateur, consultable sur /profil même sans portefeuille. */
 export function loadLatestRisk(userId: string): PortfolioRisk | null {
   try {
     const v = JSON.parse(localStorage.getItem(latestKey(userId)) ?? "null");
@@ -90,7 +78,6 @@ export function loadLatestRisk(userId: string): PortfolioRisk | null {
   } catch { return null; }
 }
 
-/** Calcule le résultat, le garde comme dernier résultat et l'enregistre pour chaque portefeuille donné. */
 export function saveRisk(userId: string, portfolioIds: string[], answers: Record<string, number>, province?: Jurisdiction): PortfolioRisk {
   const result: PortfolioRisk = { score: totalScore(answers), answers, ...(province ? { province } : {}), computedAt: new Date().toISOString() };
   const all = loadRisk(userId);
@@ -100,7 +87,6 @@ export function saveRisk(userId: string, portfolioIds: string[], answers: Record
   return result;
 }
 
-/** Applique le dernier résultat aux portefeuilles qui n'en ont pas encore (ex. créés après l'inscription). */
 export function syncRisk(userId: string, portfolioIds: string[]): Record<string, PortfolioRisk> {
   const all = loadRisk(userId);
   const latest = loadLatestRisk(userId);
@@ -112,26 +98,15 @@ export function syncRisk(userId: string, portfolioIds: string[]): Record<string,
   return all;
 }
 
-/* ---- Conversion vers le profil investisseur du contrat (PUT /v1/me/profile) ---- */
-
-/** Horizon (index de réponse) → [min, max] en années; max null = sans borne. */
 const HORIZONS: [number, number | null][] = [[0, 2], [2, 5], [5, 10], [10, 20], [20, null]];
 
 export function isComplete(answers: Record<string, number>) {
   return QUESTIONS.every((q) => answers[q.id] !== undefined);
 }
 
-/** Réponses hors score de la création du portefeuille : critères ESG, marché géographique, industries. */
 export type ProfileChoices = EsgMarketChoice & { industries: IndustryChoice };
 export const EMPTY_CHOICES: ProfileChoices = { ...EMPTY_ESG_MARKET, industries: EMPTY_INDUSTRIES };
 
-/**
- * Profil investisseur déduit du questionnaire (contraintes et exclusions laissées vides ; préférences =
- * ESG, marchés et industries choisis, voir lib/esgMarket.ts et lib/industries.ts).
- * v0.4.6 : tolérance (1 à 5, question « Perte maximale ») et capacité (1 à 5, question « Capacité
- * financière ») obligatoires et envoyées telles quelles ; riskLevel n'est plus envoyé (R1 : le niveau
- * retenu est calculé côté API comme le plus bas des deux).
- */
 export function profileFromAnswers(answers: Record<string, number>, province?: Jurisdiction, choices: ProfileChoices = EMPTY_CHOICES): InvestorProfile {
   const [min, max] = HORIZONS[answers.horizon];
   const goal = QUESTIONS.find((q) => q.id === "goal")!.options[answers.goal];

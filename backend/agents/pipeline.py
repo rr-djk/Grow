@@ -37,8 +37,6 @@ from backend.common.repositories import portfolios as portfolios_repo
 
 INTERNAL_EVENT = "complete_run"
 
-# Version du vocabulaire des règles (lot A) : 2 = citations réservées aux règles déclenchées, motifs sans approbation.
-# Un run sans rulesVersion date d'avant ; l'interface le signale et propose de le relancer.
 RULES_VERSION = 2
 
 GENERAL_LIMITATIONS = [
@@ -92,8 +90,6 @@ def build_explanation(ctx: RequestContext, sources: list[dict[str, Any]], verdic
     ]
     return {"sources": sources, "assumptions": assumptions, "limitations": limitations, "steps": steps, "checks": checks}
 
-
-# --- partie déterministe ---------------------------------------------------
 
 
 def start_run(ctx: RequestContext, mandate_version: int) -> dict[str, Any]:
@@ -150,8 +146,6 @@ def start_run(ctx: RequestContext, mandate_version: int) -> dict[str, Any]:
     return analyses_repo.put_run(ctx.session_id, ctx.user_id, run)
 
 
-# --- complétion (auditeur, rédacteur, traduction, vérificateur) -------------
-
 
 def _apply_translations(translator: RunTranslator, sections: list[dict[str, Any]], verdicts: list[dict[str, Any]],
                         notices: list[str]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str], bool]:
@@ -203,8 +197,6 @@ def complete_run(
         try:
             narrative: dict[str, Any] | None = None
             verifier_report = None
-            # data_used et limits ne citent aucune KB : elles partent en même temps que l'auditeur, avec les verdicts
-            # du module de règles et une copie figée du registre. why et what_would_change attendent les verdicts audités.
             notices_en = run.get("jurisdictionNotices", [])
             with RunTranslator(ctx, language) as translator:
                 for index, notice in enumerate(notices_en):
@@ -212,9 +204,8 @@ def complete_run(
                 with ThreadPoolExecutor(max_workers=len(SECTION_KEYS)) as pool:
                     early = writer.submit(pool, ctx, writer.analysis_record(mandate, run["scenarios"], run["verdicts"], registry.items),
                                           run["verdicts"], writer.EARLY_KEYS, with_citations=False)
-                    translator.follow_sections(early)  # chaque section part en traduction dès qu'elle est écrite
+                    translator.follow_sections(early)
                     verdicts = auditor.audit(ctx, run["verdicts"], registry)
-                    # Motifs reformulés par l'auditeur : traduits pendant les sections tardives (les motifs par défaut sont en table).
                     for verdict in verdicts:
                         translator.submit_text(verdict["messageEn"], "message", f"{verdict['rule']}:{verdict['status']}")
                     late = writer.submit(pool, ctx, writer.analysis_record(mandate, run["scenarios"], verdicts, registry.items),
@@ -225,7 +216,7 @@ def complete_run(
                     except base.AgentFailure as failure:
                         log_event("agent.failure", agentId=writer.AGENT_ID, reason=failure.reason, sessionId=session_id)
                         sections = None
-                translator.finalize()  # attend les traductions en cours, corrige en un appel LLM les textes signalés
+                translator.finalize()
                 sections_t, verdicts_t, notices_t, match = _apply_translations(translator, sections or [], verdicts, notices_en)
             status = "done"
             if sections is not None:
@@ -247,13 +238,11 @@ def complete_run(
                     cleaned = [{**s, "text": ""} for s in cleaned]
                 narrative = {
                     "sections": [{"key": s["key"], "textEn": s["textEn"], "text": s["text"]} for s in cleaned],
-                    # Une section dont la traduction a perdu un emplacement est affichée en anglais
-                    # (placeholdersMatch = false le signale) ; la langue cible reste userLanguage.
                     "language": language,
                     "hiddenSentences": hidden,
                 }
             else:
-                status = "error"  # fail-open : scénarios, verdicts et citations restent utilisables
+                status = "error"
             explanation = run.get("explanation", {})
             explanation = {
                 **explanation,
@@ -262,7 +251,6 @@ def complete_run(
                 ],
                 "checks": build_explanation(ctx, [], verdicts_t, [], [])["checks"],
             }
-            # Après le rédacteur et le vérificateur : le récit ne peut pas citer ces sections, elles s'affichent près des mentions.
             notice_citations = notices.register(registry, mandate["province"])
             fields: dict[str, Any] = {
                 "status": status, "verdicts": verdicts_t, "evidence": registry.public_items(),
@@ -287,8 +275,6 @@ def complete_run(
             telemetry.set_span_output(span, {"status": "error", "error": type(exc).__name__})
             return analyses_repo.update_run(session_id, user_id, run_id, {"status": "error", "completedAt": _now()})
 
-
-# --- déclenchement asynchrone ---------------------------------------------
 
 
 def _lambda_invoke(payload: dict[str, Any]) -> None:

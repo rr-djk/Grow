@@ -136,7 +136,6 @@ def main() -> None:
     (out / "raw").mkdir(parents=True, exist_ok=True)
     (out / "requests").mkdir(exist_ok=True)
 
-    # 1. les N dernières racines chat-message → borne de temps de la fenêtre
     roots = cli("observations", "list", "--is-root-observation", "--name", "chat-message",
                 "--fields", "core,basic", "--limit", "500", "--all", "--max-items", "5000")["data"]
     roots.sort(key=lambda r: r["startTime"], reverse=True)
@@ -144,7 +143,6 @@ def main() -> None:
     t0 = chosen[-1]["startTime"]
     print(f"{len(chosen)} requêtes chat-message, de {t0} à {chosen[0]['startTime']}", file=sys.stderr)
 
-    # 2. toutes les observations de la fenêtre ; 1re passe pour trouver les clés de métadonnées (tronquées à 200 car.)
     base = ["observations", "list", "--from-start-time", t0,"--fields", FIELDS,
             "--limit", "500", "--all", "--max-items", "500000"]
     first = cli(*base)["data"]
@@ -162,7 +160,6 @@ def main() -> None:
     for v in by_trace.values():
         v.sort(key=lambda o: (o["startTime"], o["endTime"] or ""))
 
-    # 3. une requête = un fichier + une ligne de résumé ; position dans la session
     chosen.sort(key=lambda r: r["startTime"])
     sess_idx: dict[str, int] = defaultdict(int)
     summaries = []
@@ -191,7 +188,6 @@ def main() -> None:
         for s in summaries:
             w.writerow([s.get(k) for k in flat])
 
-    # 4. analysis-run (autres agents) et racines orphelines de la fenêtre
     chosen_traces = {s["traceId"] for s in summaries}
     runs, orphans = [], []
     for t, obs in by_trace.items():

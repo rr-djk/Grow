@@ -12,7 +12,7 @@ from typing import Callable
 
 from backend.common import config
 
-REGION = "us-east-1"  # contrat : conventions.region
+REGION = "us-east-1"
 
 
 @dataclass(frozen=True)
@@ -29,8 +29,6 @@ MODELS: dict[str, AgentSpec] = {
     "agent-writer": AgentSpec(config.model_writer, 8192, 60, 6),
 }
 
-# Traduction de la restitution (partie asynchrone du run, hors API Gateway 30 s) :
-# 8192 jetons, 1 tour, 30 s. Somme asynchrone : 60 s (auditeur) + 60 s (rédacteur) + 30 s (traduction) = 150 s < 180 s (Lambda).
 TRANSLATION_SPEC = AgentSpec(config.model_orchestrator, 8192, 30, 1)
 
 _CACHE: dict[tuple[str, str, int, int], object] = {}
@@ -46,8 +44,6 @@ def model_id(agent_id: str) -> str:
 def create_model(agent_id: str, *, spec: AgentSpec | None = None):
     """BedrockModel de l'agent, réutilisé entre invocations chaudes (l'Agent, lui, est recréé)."""
     active_spec = spec or MODELS[agent_id]
-    # L'identifiant du modèle fait partie de la clé : un MODEL_* changé en cours
-    # de processus (redeploy, test) ne réutilise pas un client de l'ancien modèle.
     cache_key = (agent_id, model_id(agent_id), active_spec.max_tokens, active_spec.timeout_seconds)
     if cache_key not in _CACHE:
         from botocore.config import Config
@@ -56,7 +52,7 @@ def create_model(agent_id: str, *, spec: AgentSpec | None = None):
         _CACHE[cache_key] = BedrockModel(
             model_id=cache_key[1],
             max_tokens=active_spec.max_tokens,
-            region_name=REGION,  # explicite : sinon Strands retombe sur us-west-2
+            region_name=REGION,
             boto_client_config=Config(read_timeout=active_spec.timeout_seconds + 5, retries={"max_attempts": 2, "mode": "standard"}),
         )
     return _CACHE[cache_key]

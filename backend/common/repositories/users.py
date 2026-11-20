@@ -62,7 +62,7 @@ def put_user_if_absent(
         existing = get_user(user_id)
         if existing is not None:
             return existing
-        raise  # supprimé entre-temps : cas anormal, on ne masque pas l'erreur
+        raise
     return _to_user(item)
 
 

@@ -1,6 +1,3 @@
-/* « Comment Grow arrive à cette conclusion » (idée 6) : panneau repliable, tout vient du run.
- * Sépare ce que le moteur de calcul a produit de ce que l'IA a rédigé (GN-3200-26-001 §3.3 :
- * méthode, limites et bon usage). Aucune valeur n'est inventée ici. */
 import type { Run } from "../../api/types";
 import { t, type Lang } from "../../lib/i18n";
 import { ruleBadgeClass, ruleLabel } from "../../lib/ruleLabels";

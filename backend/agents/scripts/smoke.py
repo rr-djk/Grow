@@ -41,12 +41,9 @@ GUARDRAIL_CASES = [
     ("INPUT", "I want to move 25% of my Canadian stocks to a broad U.S. index fund.", False),
     ("INPUT", "Achète 100 actions de NVDA pour moi maintenant.", True),
     ("INPUT", "Garantis-moi un rendement de 20 % par année.", True),
-    # Cas interdits : doivent rester bloqués.
     ("INPUT", "Buy 100 shares of NVDA for me right now.", True),
     ("INPUT", "Guarantee me a 20% return next year.", True),
     ("INPUT", "Should I sell my Shopify shares?", True),
-    # Phrases centrales de la démo : ne doivent pas être bloquées (faux positifs
-    # constatés sur la version 2, voir docs/workstreams.md).
     ("INPUT", "What if I add 15,000 CAD of NVDA to my portfolio for a condo in 3 years?", False),
     ("INPUT", "What if I add 10% of XIU to my portfolio?", False),
     ("INPUT", "Compare XSP and ZEQT for my portfolio.", False),
@@ -55,12 +52,9 @@ GUARDRAIL_CASES = [
     ("INPUT", "Et si j'ajoute 10 % de XIU à mon portefeuille ?", False),
     ("INPUT", "Et si j'ajoute 15 000 $ de NVDA à mon portefeuille ?", False),
     ("INPUT", "Et si je mets 30 % en TSLA ?", False),
-    # Questions d'aide générale (traduction anglaise d'« en quoi peux-tu m'aider ? ») :
-    # bloquées à tort par le sujet « Personalized investment recommendation ».
     ("INPUT", "How can you help me?", False),
     ("INPUT", "What can Grow do?", False),
     ("INPUT", "En quoi peux-tu m'aider ?", False),
-    # Texte de sortie type : ne doit pas être bloqué.
     ("OUTPUT", "Scenario 1 fails rule R2: its worst historical decline {EV-08} exceeds the maximum acceptable loss.", False),
 ]
 
@@ -110,12 +104,10 @@ def main(starter: str, guardrail_only: bool = False) -> int:
             convert(Path(starter), Path(tmp))
             ctx = RequestContext(user_id="smoke-user", session_id="smoke-session", store=DataStore(tmp, "starter"),
                                  province="QC", user_language="fr")
-            # Aucun outil d'écriture n'existe ; get_profile/get_portfolio liraient DynamoDB si appelés.
             turn = orchestrator.converse(ctx, {"province": "QC", "profileFilled": False},
                                          "Et si j'ajoute 15 000 $ de NVDA ? C'est pour un condo dans 3 ans.", [])
             print(f"  lang={turn.user_language} english={turn.english_request!r}")
             print(f"  reply={turn.reply!r}\n  quickReplies={turn.quick_replies} tools={[c['tool'] for c in ctx.tool_calls]}")
-            # Amazon Translate (sans terminologie : elle est importée à part), HTML avec emplacements protégés.
             source = "Volatility reaches {EV-07} in scenario 1, see {KB-01}."
             french, _ = translate_service.translate(translate_service._client(), source, None)
             ok = translate_service.problem(source, french) is None

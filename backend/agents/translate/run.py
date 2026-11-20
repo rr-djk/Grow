@@ -26,7 +26,6 @@ from backend.common import config
 
 WORKERS = 8
 
-# Ce qu'on dit au LLM de correction pour chaque défaut détecté par le code.
 _PROBLEM_HINTS = {
     "empty": "The translation is empty: translate the source.",
     "placeholders": "The placeholders differ from the source (lost, added or changed): restore them exactly.",
@@ -71,8 +70,6 @@ class RunTranslator:
         if self._pool is not None:
             self._pool.shutdown(wait=True)
 
-    # --- lancement ---------------------------------------------------------------------------------------------
-
     def follow(self, label: str, source: Future) -> None:
         """Traduit `source.result()` (le texte anglais d'une section) dès que ce futur se termine."""
         if not self.active:
@@ -82,7 +79,7 @@ class RunTranslator:
 
         def on_done(done: Future) -> None:
             if done.cancelled() or done.exception() is not None:
-                out.set_exception(done.exception() or RuntimeError("cancelled"))  # le rédacteur a échoué : rien à traduire
+                out.set_exception(done.exception() or RuntimeError("cancelled"))
                 return
             try:
                 self._pool.submit(context.run, self._resolve, key, done.result(), out)
@@ -121,7 +118,7 @@ class RunTranslator:
         started = time.perf_counter()
         with telemetry.trace_span(
             "translate.text", observation_type="tool", session_id=self.ctx.session_id, user_id=self.ctx.user_id,
-            input_data={"key": label, "chars": len(english)},  # jamais le texte lui-même
+            input_data={"key": label, "chars": len(english)},
         ) as span:
             item: Item
             terminology_used = False
@@ -143,8 +140,6 @@ class RunTranslator:
                 "durationMs": round((time.perf_counter() - started) * 1000), "terminology": terminology_used,
             })
             return item
-
-    # --- fin ------------------------------------------------------------------------------------------------------
 
     def finalize(self) -> None:
         """Attend toutes les traductions, puis corrige en un seul appel LLM les textes signalés."""
@@ -194,8 +189,6 @@ class RunTranslator:
                 "flagged": len(flagged), "fixed": fixed_count, "fallback": len(flagged) - fixed_count,
                 "durationMs": round((time.perf_counter() - started) * 1000),
             })
-
-    # --- lecture (après finalize) -------------------------------------------------------------------------------
 
     def section(self, label: str, english: str) -> Item:
         return self._get(f"section:{label}", english)

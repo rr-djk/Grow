@@ -20,7 +20,6 @@ from backend.common.repositories import _dynamo
 ROLES = ("user", "assistant")
 STATUSES = ("done", "pending", "error")
 
-# Champs de schema-message portés seulement par un message de l'assistant.
 OPTIONAL_ASSISTANT_FIELDS = ("explanation", "quickReplies", "mandateDraft", "runId")
 
 

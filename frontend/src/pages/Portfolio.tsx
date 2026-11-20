@@ -25,7 +25,6 @@ let rowKey = 0;
 const toRows = (h: Holding[]): Row[] => h.map((x) => ({ key: ++rowKey, ticker: x.ticker, quantity: String(x.quantity), avgCost: String(x.avgCost) }));
 const num = (s: string) => (s.trim() === "" ? NaN : Number(s.replace(",", ".")));
 
-/** Convertit les lignes saisies en positions du contrat (ou retourne un message d'erreur). */
 function parseRows(rows: Row[], L: (fr: string, en: string) => string): { holdings: Holding[] } | { error: string } {
   const seen = new Set<string>();
   const holdings: Holding[] = [];
@@ -42,10 +41,7 @@ function parseRows(rows: Row[], L: (fr: string, en: string) => string): { holdin
   return { holdings };
 }
 
-/* Onboarding (0.4.17) : mandat build construit sans LLM à partir des réponses du questionnaire,
- * avec les mêmes règles que l'orchestrateur (objectif, horizon, tolérance, capacité, industries du profil). */
-const OBJECTIVES: MandateObjective[] = ["preservation", "income", "growth", "growth", "growth"]; // ordre des réponses « goal »
-// Les industries du profil sont déjà des noms exacts du jeu (recherche du questionnaire) : pas de développement.
+const OBJECTIVES: MandateObjective[] = ["preservation", "income", "growth", "growth", "growth"];
 
 function onboardingMandate(answers: Record<string, number>, province: Jurisdiction, choices: ProfileChoices,
   lang: string, buildAmount?: number): MandateCreateRequest {
@@ -55,7 +51,7 @@ function onboardingMandate(answers: Record<string, number>, province: Jurisdicti
   return {
     portfolioId: "main", mode: "build", province, userLanguage: lang === "en" ? "en" : "fr",
     objective: OBJECTIVES[answers.goal] ?? "growth",
-    horizonYears: profile.horizonMinYears || 1, // l'API exige > 0 ; borne basse de la tranche choisie
+    horizonYears: profile.horizonMinYears || 1,
     riskTolerance: profile.riskTolerance!, riskCapacity: profile.riskCapacity!,
     preferences: { excludedIndustries: excluded, preferredIndustries: preferred.map((industry) => ({ industry, minWeight: null })) },
     ...(buildAmount ? { buildAmount } : {}),
@@ -107,7 +103,7 @@ export default function PortfolioPage() {
   const sumSeq = useRef(0);
 
   useEffect(() => {
-    if (!profileReady || portfolio) return; // onboarding : portefeuille déjà chargé par createPortfolio
+    if (!profileReady || portfolio) return;
     setLoading(true);
     listPortfolios()
       .then(({ items }) => {
@@ -135,20 +131,18 @@ export default function PortfolioPage() {
       setOnboardingBusy(false);
       return;
     }
-    // Profil enregistré : la page passe en vue portefeuille à la fin, même si la construction échoue.
     setBuilding(true);
     try {
-      const { items } = await listPortfolios(); // crée le portefeuille « main » vide
+      const { items } = await listPortfolios();
       let main = items.find((x) => x.portfolioId === "main") ?? items[0];
       try {
-        // Premier portefeuille fictif (0.4.17) : même calcul que le mode build du chat, confirmé sans approbation.
         const conv = await createConversation(L("Premier portefeuille", "First portfolio"));
         const mandate = await createMandate(conv.sessionId, onboardingMandate(answers, province, choices, lang, buildAmount));
         let run: Run;
         try {
           run = await createRun(conv.sessionId, mandate.version);
         } catch {
-          run = await createRun(conv.sessionId, mandate.version); // filet de sécurité (délai d'API Gateway)
+          run = await createRun(conv.sessionId, mandate.version);
         }
         const built = run.scenarios.find((x) => x.index === 1 && x.holdings?.length);
         const holdings = (built?.holdings ?? []).filter((h) => h.quantity && h.price)
@@ -210,7 +204,7 @@ export default function PortfolioPage() {
           setSuggestions(items);
           setInfo((m) => ({ ...m, ...Object.fromEntries(items.map((a) => [a.ticker, a])) }));
         })
-        .catch(() => {}); // l'autocomplétion est une aide : une erreur ne bloque pas la saisie
+        .catch(() => {});
     }, 250);
   }
 
@@ -224,7 +218,7 @@ export default function PortfolioPage() {
     if ("error" in r) return setSaveErr(r.error);
     setSaving(true); setSaveErr("");
     try {
-      const p = await putHoldings(portfolio.portfolioId, r.holdings); // état complet de la table
+      const p = await putHoldings(portfolio.portfolioId, r.holdings);
       setPortfolio(p); setRows(toRows(p.holdings));
     } catch (e) {
       setSaveErr(e instanceof ApiError && e.code === "ASSET_NOT_FOUND" && e.message ? e.message : errorText(e));

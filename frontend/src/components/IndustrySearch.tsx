@@ -2,9 +2,6 @@ import { useState } from "react";
 import { useT } from "../lib/i18n";
 import { industryName, searchIndustries, type IndustryChoice } from "../lib/industries";
 
-/* Industries en deux champs de recherche : ce que le client aime, ce qu'il préfère éviter (facultatif).
- * La recherche porte sur le nom du jeu (anglais) et sur sa traduction française ; le choix d'une suggestion
- * ajoute une puce supprimable. Choisir une industrie dans une liste la retire de l'autre. */
 function Side({ side, title, placeholder, value, onChange }: {
   side: keyof IndustryChoice; title: string; placeholder: string; value: IndustryChoice; onChange: (v: IndustryChoice) => void;
 }) {
@@ -12,7 +9,6 @@ function Side({ side, title, placeholder, value, onChange }: {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const other: keyof IndustryChoice = side === "liked" ? "avoided" : "liked";
-  // Déjà choisie dans la même liste : masquée ; dans l'autre : proposée, le choix la déplace.
   const results = searchIndustries(query, value[side]);
   const listId = `industry-${side}-list`;
   const add = (en: string) => {

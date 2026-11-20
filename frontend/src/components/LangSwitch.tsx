@@ -1,6 +1,5 @@
 import { useT } from "../lib/i18n";
 
-/** Bouton FR | EN : change la langue de toute l'interface (pas celle du chatbot, qui suit l'utilisateur). */
 export default function LangSwitch() {
   const { lang, setLang } = useT();
   return (

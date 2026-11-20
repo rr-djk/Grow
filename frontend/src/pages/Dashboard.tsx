@@ -1,6 +1,3 @@
-/* Page /accueil (logo Grow) : vue générale du portefeuille du client.
- * Valeur totale, courbe de performance, camembert d'allocation et vue graphique des titres.
- * Aucun calcul financier ici : tout vient de GET /portfolios/{id}/summary (le front ne fait que présenter). */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { errorText } from "../api/errors";
@@ -26,7 +23,6 @@ const BREAKDOWNS = [
 ] as const;
 type BreakdownKey = (typeof BREAKDOWNS)[number]["key"];
 
-/** Camembert (donut) en SVG : un arc par tranche, centre interactif. */
 function Donut({ slices, centerTitle, centerValue, classes = false }: { slices: Slice[]; centerTitle: string; centerValue: string; classes?: boolean }) {
   const { lang, L } = useT();
   const name = (label: string) => (classes ? assetClassName(label, lang) : label);

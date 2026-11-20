@@ -16,20 +16,17 @@ from backend.agents.observability import log_tool_call
 from backend.agents.tools.catalog import TOOL_FUNCTIONS
 from backend.agents.tools.context import RequestContext
 
-# Contrat v0.4.0 : agents.allowed_tools et modules.uses_tools (noms d'outils).
 GRANTS: dict[str, list[str]] = {
     "agent-orchestrator": ["get_portfolio", "get_profile", "search_assets", "propose_mandate", "read_evidence"],
-    "agent-auditor": ["search_regulation"],  # 0.4.3 : appelé par le code de l'auditeur, le modèle n'a aucun outil
+    "agent-auditor": ["search_regulation"],
     "agent-writer": ["read_evidence"],
     "module-engine": ["get_prices", "get_macro", "compute_metrics", "market_stats", "optimize_portfolio", "get_portfolio", "portfolio_impact", "stress_test", "concentration"],
     "module-rules": ["check_rules"],
     "module-verifier": [],
 }
 
-# Plafonds d'appels d'outils par invocation (contrat : agents.limits).
 MAX_TOOL_CALLS = {"agent-auditor": 16, "agent-writer": 4, "agent-orchestrator": 8}
 
-# Source citée dans tool.call (contrat observability.events.tool.call.source).
 TOOL_SOURCES = {
     "search_assets": "storage-dataset: universe.parquet",
     "get_prices": "storage-dataset: prices",
@@ -48,7 +45,6 @@ TOOL_SOURCES = {
     "search_regulation": "srv-bedrock-kb",
 }
 
-# Paramètres jamais journalisés en entier (contenu libre).
 _REDACTED_PARAMS = {"draft"}
 
 
@@ -116,5 +112,4 @@ def build_toolbox() -> Toolbox:
     return box
 
 
-# Construit au chargement du module : une faute de câblage casse l'import (démarrage à froid).
 TOOLBOX = build_toolbox()

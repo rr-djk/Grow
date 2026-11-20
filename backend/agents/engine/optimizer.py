@@ -108,9 +108,9 @@ class Holding:
     symbol: str
     name: str
     industry: str
-    weight: float  # fraction (0.05 = 5 %)
+    weight: float
     beta: float
-    expected_return: float  # mu (CAPM), fraction par an
+    expected_return: float
 
 
 @dataclass
@@ -210,7 +210,7 @@ def optimize_portfolio(store: DataStore, risk_profile: int, excluded_industries:
     )
 
     symbols = [*candidates.index, MARKET_INDEX]
-    store.prices_many(symbols)  # ~400 tickers : lecture groupée au lieu d'un GET S3 par ticker
+    store.prices_many(symbols)
     series = {symbol: native_series(store, symbol) for symbol in symbols}
     prices = pd.DataFrame(series).sort_index()
     end = store.last_date()
@@ -262,8 +262,6 @@ def optimize_portfolio(store: DataStore, risk_profile: int, excluded_industries:
         ) from error
     small = (weights < cfg["minPositionWeight"]) & keep
     if small.any():
-        # Positions trop petites abandonnées : on résout de nouveau sans elles (au lieu de renormaliser, ce qui ferait
-        # dépasser le plafond par titre). Repli sur la renormalisation du script si le problème devient infaisable.
         try:
             weights = solve(keep & ~small)
         except ValueError:

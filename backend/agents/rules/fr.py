@@ -11,19 +11,16 @@ déclenchée se dit « non déclenchée ». Les mentions de province nomment lé
 
 from __future__ import annotations
 
-# Suite ajoutée par R6 à un motif quand la composition d'un FNB est incomplète.
 LOOK_THROUGH_SUFFIX_EN = " Fund look-through is incomplete for some funds."
 LOOK_THROUGH_SUFFIX_FR = " La décomposition par transparence est incomplète pour certains fonds."
 
 MESSAGES_FR: dict[str, str] = {
-    # R1
     "The scenario's volatility band does not exceed the retained level (the lower of tolerance and capacity).":
         "La bande de volatilité du scénario ne dépasse pas le niveau retenu (le plus bas entre la tolérance et la capacité).",
     "The tested idea implies a higher risk profile than the retained one, which is the lower of risk tolerance and risk capacity.":
         "L'idée testée suppose un profil de risque plus élevé que le profil retenu, soit le plus bas entre la tolérance au risque et la capacité à prendre des risques.",
     "The portfolio's volatility implies a higher risk profile than the retained one.":
         "La volatilité du portefeuille suppose un profil de risque plus élevé que le profil retenu.",
-    # R2
     "The historical drawdown could not be computed for this scenario.":
         "La baisse maximale historique n'a pas pu être calculée pour ce scénario.",
     "The worst simulated historical decline exceeds the maximum acceptable loss for this mandate.":
@@ -32,24 +29,20 @@ MESSAGES_FR: dict[str, str] = {
         "La pire baisse historique simulée s'approche de la perte maximale acceptable de ce mandat.",
     "The worst simulated historical decline does not reach the warning threshold derived from the maximum acceptable loss of this mandate.":
         "La pire baisse historique simulée n'atteint pas le seuil d'alerte tiré de la perte maximale acceptable de ce mandat.",
-    # R3
     "The portfolio is empty: the impact cannot be measured on an existing portfolio.":
         "Le portefeuille est vide : l'effet ne peut pas être mesuré sur un portefeuille existant.",
     "The impact is measured on the whole portfolio, not on the added security alone; the rule was not triggered.":
         "L'effet est mesuré sur l'ensemble du portefeuille, et non sur le seul titre ajouté ; la règle n'a pas été déclenchée.",
-    # R4
     "No comparison by asset category was requested.":
         "Aucune comparaison par catégorie d'actifs n'a été demandée.",
     "A comparison by asset category is shown as an additional scenario.":
         "Une comparaison par catégorie d'actifs est présentée comme scénario supplémentaire.",
     "The requested comparison could not be built from the dataset.":
         "La comparaison demandée n'a pas pu être construite à partir du jeu de données.",
-    # R5
     "A security symbol appears in the visible scenario texts.":
         "Un symbole de titre apparaît dans les textes visibles des scénarios.",
     "No security symbol appears in the visible scenario texts: the rule was not triggered.":
         "Aucun symbole de titre n'apparaît dans les textes visibles des scénarios ; la règle n'a pas été déclenchée.",
-    # R6
     "A single security, including through fund holdings, carries a very large share of the portfolio.":
         "Un seul titre, y compris par les titres détenus par les fonds, représente une très grande part du portefeuille.",
     "A single security, including through fund holdings, carries a large share of the portfolio.":
@@ -58,31 +51,26 @@ MESSAGES_FR: dict[str, str] = {
         "Aucun titre individuel, y compris par les titres détenus par les fonds, ne dépasse le seuil d'alerte de concentration.",
     "A single sector, including through fund holdings, carries a large share of the portfolio.":
         "Un seul secteur, y compris par les titres détenus par les fonds, représente une grande part du portefeuille.",
-    # R7
     "The scenario holds no crypto assets: the rule does not apply.":
         "Le scénario ne détient aucun crypto-actif : la règle ne s'applique pas.",
     "Crypto-asset exposure exceeds the cap for this mandate; crypto assets carry specific platform and custody risks.":
         "L'exposition aux crypto-actifs dépasse le plafond de ce mandat ; les crypto-actifs comportent des risques propres aux plateformes et à la garde.",
     "Crypto-asset exposure stays within the cap for this mandate, but crypto assets carry specific platform and custody risks.":
         "L'exposition aux crypto-actifs reste sous le plafond de ce mandat, mais les crypto-actifs comportent des risques propres aux plateformes et à la garde.",
-    # R8
     "The mandate has no ESG preference: the rule does not apply.":
         "Le mandat n'exprime aucune préférence ESG : la règle ne s'applique pas.",
     "Every holding has a published issuer ESG methodology: the rule was not triggered.":
         "Chaque position a une méthodologie ESG publiée par l'émetteur ; la règle n'a pas été déclenchée.",
     "Some holdings have no published ESG methodology: for equities only the sector is known and controversies are not verified.":
         "Certaines positions n'ont pas de méthodologie ESG publiée : pour les actions, seul le secteur est connu et les controverses ne sont pas vérifiées.",
-    # R9
     "Province notices name the regulator and the protected titles this tool does not use.":
         "Les mentions de la province nomment l'autorité de réglementation et les titres protégés que cet outil n'utilise pas.",
-    # R10
     "A macroeconomic value was used before its publication date.":
         "Une valeur macroéconomique a été utilisée avant sa date de publication.",
     "Only daily macroeconomic series, known on their observation date, were used: the rule was not triggered.":
         "Seules des séries macroéconomiques quotidiennes, connues à leur date d'observation, ont été utilisées ; la règle n'a pas été déclenchée.",
 }
 
-# Mentions de juridiction : `baseNotice` et `provinceNotices` de rules_config.json.
 NOTICES_FR: dict[str, str] = {
     "Educational simulation only, not financial advice. No order is placed.":
         "Simulation éducative seulement, pas un conseil financier. Aucun ordre n'est passé.",

@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-# { code du contrat : statut HTTP }
 HTTP_STATUS_BY_CODE: dict[str, int] = {
     "UNAUTHORIZED": 401,
     "FORBIDDEN": 403,
@@ -26,7 +25,6 @@ HTTP_STATUS_BY_CODE: dict[str, int] = {
     "INTERNAL": 500,
 }
 
-# En-têtes CORS de base (l'origine du front sera restreinte par l'infra, WS1).
 CORS_HEADERS: dict[str, str] = {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",

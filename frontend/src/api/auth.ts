@@ -1,7 +1,3 @@
-/*
- * Connexion directe à Amazon Cognito (contrat : « le login se fait auprès de Cognito, pas via notre API »).
- * Flux USER_PASSWORD_AUTH, client d'application sans secret. Aucun mot de passe n'est conservé.
- */
 import { inLang } from "../lib/format";
 import { DEMO, demoDeleteUser, demoSignIn, demoSignUp } from "./demo";
 import { ApiError } from "./errors";
@@ -42,7 +38,6 @@ async function cognito(target: string, body: unknown): Promise<any> {
   return json;
 }
 
-/* Erreurs Cognito traduites (les messages bruts de Cognito sont en anglais). */
 const COGNITO_ERRORS: Record<string, [ErrorCode, string]> = {
   NotAuthorizedException: ["UNAUTHORIZED", "Identifiants invalides."],
   UserNotFoundException: ["UNAUTHORIZED", "Identifiants invalides."],
@@ -72,13 +67,8 @@ export async function signIn(username: string, password: string) {
   store(r);
 }
 
-/**
- * Inscription Cognito (SignUp, public, sans jeton). Le déclencheur pre sign-up confirme le compte
- * d'office : aucun code par courriel, la connexion peut suivre tout de suite.
- */
 export async function signUp(username: string, password: string, email: string, givenName: string, familyName: string): Promise<void> {
   if (DEMO) { demoSignUp(username, password, email, `${givenName} ${familyName}`); return; }
-  // Attributs standard Cognito; le client d'application doit avoir le droit d'écrire given_name et family_name.
   await cognito("SignUp", {
     ClientId: CLIENT_ID, Username: username, Password: password,
     UserAttributes: [
@@ -90,10 +80,6 @@ export async function signUp(username: string, password: string, email: string, 
 }
 
 export function signOut() { write(null); inflight = null; }
-/**
- * Supprime l'identifiant de l'utilisateur connecté dans Cognito (DeleteUser, avec son propre jeton d'accès).
- * Irréversible. À appeler en dernier : ensuite, le jeton ne permet plus d'appeler l'API.
- */
 export async function deleteOwnAccount(): Promise<void> {
   const token = await getAccessToken();
   if (DEMO) demoDeleteUser(token);
@@ -104,12 +90,11 @@ export const hasSession = () => read() !== null;
 
 let inflight: Promise<string> | null = null;
 
-/** Retourne un accessToken valide (renouvelé au besoin). Lève UNAUTHORIZED si la session est perdue. */
 export async function getAccessToken(forceRefresh = false): Promise<string> {
   const t = read();
   if (!t) throw new ApiError("UNAUTHORIZED", inLang("Session expirée.", "Session expired."), 401);
   if (!forceRefresh && t.expiresAt - Date.now() > 30_000) return t.accessToken;
-  if (DEMO) { write(null); throw new ApiError("UNAUTHORIZED", inLang("Session expirée.", "Session expired."), 401); } // pas de renouvellement en démo
+  if (DEMO) { write(null); throw new ApiError("UNAUTHORIZED", inLang("Session expirée.", "Session expired."), 401); }
   inflight ??= cognito("InitiateAuth", { AuthFlow: "REFRESH_TOKEN_AUTH", ClientId: CLIENT_ID, AuthParameters: { REFRESH_TOKEN: t.refreshToken } })
     .then((r) => store(r, t.refreshToken).accessToken)
     .catch((e) => { write(null); throw e instanceof ApiError && e.code === "NETWORK" ? e : new ApiError("UNAUTHORIZED", inLang("Session expirée.", "Session expired."), 401); })

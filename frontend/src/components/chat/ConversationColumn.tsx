@@ -1,7 +1,3 @@
-/* Colonne 2 de /chat : conversation. Messages (réponses de l'assistant mises en forme par MessageText,
- * règles repliées avec « Voir plus »), boutons quickReplies de l'orchestrateur, carte « mandat
- * proposé » (mandateDraft) avec Confirmer (POST mandates puis POST runs) et Modifier (édition des
- * champs clés avant confirmation). */
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { MandateCreateRequest, Message } from "../../api/types";
 import { t, type Lang } from "../../lib/i18n";
@@ -12,7 +8,7 @@ import Explanation from "../Explanation";
 import MandateCard from "./MandateCard";
 import MessageText from "./MessageText";
 
-const MAX_LEN = 2000; // schema-message-create-request
+const MAX_LEN = 2000;
 
 const MODES = ["add_asset", "rebalance", "diagnose", "build"] as const;
 const OBJECTIVES = ["growth", "income", "preservation", "project", "retirement"] as const;
@@ -114,7 +110,6 @@ export default function ConversationColumn({
   evidence: import("../../api/types").Evidence[];
   busy: boolean;
   lang: Lang;
-  /** Refus de Guardrail : texte envoyé (remis dans le champ pour être reformulé) et explication rédigée côté serveur. */
   refusal: { id: number; sent: string; message: string } | null;
   onDismissRefusal: () => void;
   onSend: (text: string) => void;
@@ -123,23 +118,18 @@ export default function ConversationColumn({
 }) {
   const [v, setV] = useState("");
   const [partial, setPartial] = useState("");
-  const [dictated, setDictated] = useState(false); // le champ contient du texte dicté : rappel de le relire avant l'envoi
-  // Saisie vocale (0.4.8) : le texte final s'ajoute à `v`, le texte provisoire s'affiche dans le champ à la suite
-  // de `v` (gris italique) et se remplace à chaque mise à jour ; l'envoi reste manuel.
+  const [dictated, setDictated] = useState(false);
   const speech = useSpeechToText(lang, (seg) => { setDictated(true); setV((cur) => appendSpeech(cur, seg, MAX_LEN)); }, setPartial);
   const dictating = speech.state === "listening" || speech.state === "finishing";
   const shown = appendSpeech(v, partial, MAX_LEN);
   const field = useRef<HTMLInputElement>(null);
-  // Garde la fin de la phrase en cours visible quand elle dépasse la largeur du champ.
   useEffect(() => { const el = field.current; if (el && partial) el.scrollLeft = el.scrollWidth; }, [partial]);
-  // Un refus remet le texte envoyé dans le champ : l'utilisateur le reformule au lieu de le retaper.
   useEffect(() => { if (refusal) { setV(refusal.sent); setDictated(false); field.current?.focus(); } }, [refusal?.id]);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [messages.length, busy]);
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    // Le texte en cours de reconnaissance fait partie du message : on l'ajoute avant d'abandonner la dictée.
     const text = shown.trim();
     if (!text || busy) return;
     speech.abort();
@@ -164,7 +154,7 @@ export default function ConversationColumn({
       </div>
       <div className="chat-col-foot">
         <form className={`af-composer${partial ? " af-composer-live" : ""}`} onSubmit={submit}>
-          {/* Lecture seule pendant la dictée : une frappe copierait le texte provisoire dans `v`, qui serait réaffiché. */}
+          {}
           <input ref={field} value={shown} onChange={(e) => { setV(e.target.value); if (refusal) onDismissRefusal(); }} onKeyDown={key} readOnly={dictating}
             placeholder={t("chat.placeholder", lang)} aria-label={t("chat.send", lang)} maxLength={MAX_LEN} />
           {speech.supported && (

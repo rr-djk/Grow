@@ -1,4 +1,3 @@
-/* Page Marchés : style fintech, s'appuie sur les variables de styles.css. */
 .mk { padding-bottom: 48px; }
 
 .mk-top { padding: 36px 0 20px; display: grid; gap: 18px; }
@@ -40,7 +39,6 @@
 .mk-chip.ghost { height: 34px; padding: 0 12px 0 8px; font-weight: 600; color: var(--ink); }
 .mk-chip:focus-visible, .mk-row:focus-visible { outline: 3px solid rgba(72, 230, 139, .5); outline-offset: 2px; }
 
-/* États vides */
 .mk-empty {
   display: grid; justify-items: center; text-align: center; gap: 6px; padding: 56px 24px;
   background: var(--surface-glass); border: 1px dashed rgba(27, 94, 69, .2); border-radius: var(--radius-card);
@@ -51,7 +49,6 @@
 .mk-suggest { justify-content: center; margin-top: 14px; }
 .mk-suggest > span { font-size: 13px; color: var(--faint); margin-right: 2px; }
 
-/* Résultats + fiche */
 .mk-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
 .mk-listcard, .mk-detail {
   background: var(--surface-glass-strong); border: 1px solid rgba(255, 255, 255, .9);
@@ -112,7 +109,6 @@
   .mk-chip, .mk-row, .mk-input, .mk-list { transition: none; }
 }
 
-/* ===== Fiche d'un actif (style épuré) ===== */
 .ap { padding-top: 24px; }
 .ap-back { display: inline-block; margin-bottom: 18px; font-size: 14px; font-weight: 600; color: var(--muted); }
 .ap-back:hover { color: var(--red-dark); }

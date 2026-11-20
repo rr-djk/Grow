@@ -1,4 +1,3 @@
-/* Page d'accueil épurée. Le questionnaire investisseur est réservé à la création du portefeuille. */
 import { Link, Navigate } from "react-router-dom";
 import PublicHeader from "../components/PublicHeader";
 import { useT } from "../lib/i18n";

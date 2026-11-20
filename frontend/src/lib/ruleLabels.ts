@@ -1,67 +1,41 @@
-/*
- * Libellé d'une règle à partir de son motif (reasonCode) — lots A et B (contrat 0.4.4, 0.4.5).
- * Les codes viennent de backend/agents/rules/rules.py ; ils ne sont pas renommés ici.
- * Vocabulaire (GN-3200-26-001, 2.1.1) : l'outil décrit ce qu'il fait (règle, seuil, calcul),
- * jamais ce qu'il pense de l'utilisateur ou de son idée. Aucun mot de conformité ou de convenance :
- * une règle est « non déclenchée », « à vérifier » ou « déclenchée » — elle n'est jamais « conforme ».
- * R4 (motifs COMPARISON_*) est prioritaire sur le repli « tout pass = non déclenchée ».
- * Familles pour le décompte de la carte de scénario et le style du badge :
- * - not_triggered : `.badge` seul (neutre, gris) — le vert est réservé aux gains ;
- * - to_check : `.badge.warn` (orange) ;
- * - triggered : `.badge.fail` (rouge brique).
- */
-
 export type RuleStatus = "pass" | "warn" | "fail" | "not_verified";
 export type RuleFamily = "not_triggered" | "to_check" | "triggered";
 export type Lang = "fr" | "en";
 
 type Labels = { fr: string; en: string };
 
-/* Motifs explicites du backend (backend/agents/rules/rules.py). */
 const CODES: Record<string, Labels> = {
-  // R4 : la comparaison par catégorie n'existe que sur demande (prioritaire sur le repli pass).
   COMPARISON_NOT_REQUESTED: { fr: "pas de comparaison demandée", en: "no comparison requested" },
   COMPARISON_SHOWN: { fr: "comparaison affichée", en: "comparison shown" },
   COMPARISON_UNAVAILABLE: { fr: "comparaison indisponible", en: "comparison unavailable" },
-  // R1.
   RISK_PROFILE_RESPECTED: { fr: "non déclenchée", en: "not triggered" },
   IDEA_EXCEEDS_RISK_PROFILE: { fr: "au-dessus du niveau retenu", en: "above the retained level" },
   PORTFOLIO_EXCEEDS_RISK_PROFILE: { fr: "au-dessus du niveau retenu", en: "above the retained level" },
-  // R2.
   DRAWDOWN_NOT_COMPUTED: { fr: "non vérifiée", en: "not verified" },
   MAX_LOSS_WITHIN_LIMIT: { fr: "non déclenchée", en: "not triggered" },
   MAX_LOSS_NEAR_LIMIT: { fr: "seuil proche", en: "threshold close" },
   MAX_LOSS_EXCEEDED: { fr: "seuil dépassé", en: "threshold exceeded" },
-  // R3.
   EMPTY_PORTFOLIO: { fr: "à vérifier", en: "to check" },
   PORTFOLIO_LEVEL_IMPACT: { fr: "non déclenchée", en: "not triggered" },
-  // R6.
   CONCENTRATION_OK: { fr: "non déclenchée", en: "not triggered" },
   CONCENTRATION_ELEVATED: { fr: "seuil d'attention dépassé", en: "attention threshold exceeded" },
   SECTOR_CONCENTRATION_ELEVATED: { fr: "seuil d'attention dépassé", en: "attention threshold exceeded" },
   CONCENTRATION_HIGH: { fr: "seuil dépassé", en: "threshold exceeded" },
-  // R7.
   NO_CRYPTO_EXPOSURE: { fr: "non déclenchée", en: "not triggered" },
   CRYPTO_WITHIN_CAP: { fr: "à vérifier", en: "to check" },
   CRYPTO_CAP_EXCEEDED: { fr: "seuil dépassé", en: "threshold exceeded" },
-  // R8.
   ESG_NOT_REQUESTED: { fr: "non déclenchée", en: "not triggered" },
   ESG_SOURCED: { fr: "non déclenchée", en: "not triggered" },
   ESG_NOT_VERIFIED: { fr: "à vérifier", en: "to check" },
-  // R5.
   NO_SECURITY_RECOMMENDED: { fr: "non déclenchée", en: "not triggered" },
   SECURITY_NAMED: { fr: "déclenchée", en: "triggered" },
-  // R9.
   PROVINCE_NOTICES_ADDED: { fr: "non déclenchée", en: "not triggered" },
-  // R10.
   MACRO_PUBLICATION_RESPECTED: { fr: "non déclenchée", en: "not triggered" },
   MACRO_USED_BEFORE_PUBLICATION: { fr: "déclenchée", en: "triggered" },
 };
 
-/* Codes de R4 : toujours leur libellé propre, même si le statut change. */
 const R4_CODES = new Set(["COMPARISON_NOT_REQUESTED", "COMPARISON_SHOWN", "COMPARISON_UNAVAILABLE"]);
 
-/* Famille par motif explicite (dépasse les familles déduites du statut, ex. R4). */
 const FAMILY_OF_CODE: Record<string, RuleFamily> = {
   COMPARISON_NOT_REQUESTED: "not_triggered",
   COMPARISON_SHOWN: "not_triggered",
@@ -87,7 +61,6 @@ const STATUS_FALLBACK: Record<Exclude<RuleStatus, "pass">, Labels> = {
 
 const PASS_LABEL: Labels = { fr: "non déclenchée", en: "not triggered" };
 
-/** Libellé du motif d'une règle. Motif inconnu : repli par statut (pass → non déclenchée). */
 export function ruleLabel(reasonCode: string, status: RuleStatus, lang: Lang): string {
   const known = CODES[reasonCode];
   if (known) return known[lang];
@@ -95,7 +68,6 @@ export function ruleLabel(reasonCode: string, status: RuleStatus, lang: Lang): s
   return STATUS_FALLBACK[status][lang];
 }
 
-/** Famille d'affichage : neutre (non déclenchée), à vérifier (orange) ou déclenchée (rouge). */
 export function ruleFamily(reasonCode: string, status: RuleStatus): RuleFamily {
   const byCode = FAMILY_OF_CODE[reasonCode];
   if (byCode) return byCode;
@@ -104,7 +76,6 @@ export function ruleFamily(reasonCode: string, status: RuleStatus): RuleFamily {
   return status === "warn" ? "to_check" : "triggered";
 }
 
-/** Classe CSS du badge : `.badge` seul reste neutre (gris) ; le vert est réservé aux gains. */
 export function ruleBadgeClass(reasonCode: string, status: RuleStatus): string {
   const family = ruleFamily(reasonCode, status);
   return family === "not_triggered" ? "badge" : family === "to_check" ? "badge warn" : "badge fail";
@@ -112,7 +83,6 @@ export function ruleBadgeClass(reasonCode: string, status: RuleStatus): string {
 
 type VerdictLike = { rule: string; scenario?: number; status: RuleStatus; reasonCode: string };
 
-/** Décompte des règles d'un scénario, calculé côté interface depuis run.verdicts (plus de pastille). */
 export function scenarioRuleSummary(verdicts: VerdictLike[], scenarioIndex: number, lang: Lang): string {
   const forScenario = verdicts.filter((v) => v.scenario === scenarioIndex);
   const counts: Record<RuleFamily, number> = { not_triggered: 0, to_check: 0, triggered: 0 };

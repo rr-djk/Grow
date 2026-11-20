@@ -31,9 +31,8 @@ import seed_personas as sp  # noqa: E402
 REGION = "us-east-1"
 MAX_TURNS = 5
 RUN_TIMEOUT_S = 240
-HTTP_TIMEOUT_S = 170  # un tour de l'orchestrateur peut durer plus de 30 s (Lambda agents : 180 s)
+HTTP_TIMEOUT_S = 170
 
-# nom du cas : (persona, message d'ouverture, réponses aux questions de cadrage, attentes)
 CASES: dict[str, dict] = {
     "robert-build-simple": {
         "persona": "robert", "mode": "build",
@@ -271,7 +270,6 @@ def check_run(spec: dict, draft: dict, confirmed: dict, run: dict, check, result
     check("R5 not triggered", rules.get(("R5", None)) == "pass", str(rules.get(("R5", None))))
     check("verifier report: placeholders match", (run.get("verifier") or {}).get("placeholdersMatch", True) is True)
     hidden = (run.get("narrative") or {}).get("hiddenSentences") or []
-    # Le vérificateur masque une phrase fautive (chiffre écrit à la main, formule interdite) sans bloquer le run : on suit le nombre.
     check("at most 3 narrative sentences hidden by the verifier", len(hidden) <= 3, str(hidden))
     narrative = " ".join(s.get("text", "") for s in (run.get("narrative") or {}).get("sections", []))
     check("narrative present", bool(narrative.strip()))

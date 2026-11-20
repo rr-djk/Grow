@@ -1,11 +1,3 @@
-/*
- * Fermeture du compte, en trois étapes :
- *   1. transfert (simulé) des fonds vers une autre institution : les positions de chaque portefeuille sont vidées
- *      (PUT holdings []) ; aucun fonds réel n'existe ni ne bouge ;
- *   2. confirmation : l'utilisateur retape son nom d'utilisateur ;
- *   3. suppression : sessions (DELETE /v1/conversations/{id}), données locales, puis identifiant Cognito (DeleteUser).
- * Le contrat n'a pas de route DELETE /v1/me : la fiche Users (profil) et le portefeuille vide restent dans DynamoDB.
- */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteOwnAccount } from "../api/auth";
@@ -65,7 +57,7 @@ export default function CloseAccount() {
         cursor = page.nextCursor ?? undefined;
       } while (cursor);
       for (const k of [`af.risk.${user.userId}`, `af.risk.latest.${user.userId}`]) localStorage.removeItem(k);
-      await deleteOwnAccount(); // en dernier : le jeton ne sert plus ensuite
+      await deleteOwnAccount();
       logout();
       nav("/", { replace: true });
     } catch (e) { setErr(errorText(e)); setStep("confirm"); }

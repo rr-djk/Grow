@@ -1,8 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useT } from "../lib/i18n";
 
-/** Petite bulle « ? » qui explique en une ou deux phrases comment un chiffre est calculé.
- *  Ouverture au clic (et au clavier), fermeture avec Échap ou un clic à l'extérieur. */
 export default function InfoTip({ text }: { text: string }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);

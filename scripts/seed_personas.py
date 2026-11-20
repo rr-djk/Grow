@@ -29,7 +29,6 @@ from pathlib import Path
 
 CODE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(CODE_ROOT))
-# Dépôt principal, même depuis un worktree (.env, jeu de données et état Terraform n'y sont pas copiés).
 ROOT = Path(subprocess.run(
     ["git", "-C", str(CODE_ROOT), "rev-parse", "--path-format=absolute", "--git-common-dir"],
     check=True, capture_output=True, text=True,
@@ -39,7 +38,6 @@ ENV_FILE = ROOT / ".env"
 DATASET_DIR = ROOT / "data" / "output" / "2026-11-14"
 REGION = "us-east-1"
 
-# Montants en CAD. Robert : SOLUTION.md section 6 (scénario vedette).
 PERSONAS: dict[str, dict] = {
     "robert": {
         "profile": {
@@ -59,7 +57,6 @@ PERSONAS: dict[str, dict] = {
             "constraints": ["diversification cohérente avec un risque élevé"], "preferences": ["IA"],
             "excludedAssetClasses": [],
         },
-        # Trop canadien : sert le mode B (basculer vers les actions américaines).
         "amounts": {"XIC.TO": 45000, "XIU.TO": 15000, "SHOP.TO": 5000, "VFV.TO": 8000, "BTC-USD": 6000},
     },
     "mateo": {
@@ -145,7 +142,7 @@ def holdings_from_amounts(amounts: dict[str, float]) -> list[dict]:
     for ticker, cad in amounts.items():
         close = store.prices(ticker)["close"]
         last = float(close.iloc[-1])
-        cost = float(close.iloc[max(0, len(close) - 253)])  # environ un an plus tôt
+        cost = float(close.iloc[max(0, len(close) - 253)])
         fx = usdcad if store.asset(ticker)["currency"] == "USD" else 1.0
         holdings.append({"ticker": ticker, "quantity": round(cad / fx / last, 6), "avgCost": round(cost, 4)})
     return holdings

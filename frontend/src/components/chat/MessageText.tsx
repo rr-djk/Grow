@@ -1,7 +1,3 @@
-/* Réponse de l'assistant mise en forme pour la lecture : paragraphes, listes, gras, citations.
- * Une règle expliquée dans la réponse (paragraphe ou élément de liste qui commence par R1 à R10) est repliée
- * sur sa première phrase ; « Voir plus » déroule le reste. Le texte n'est jamais réécrit, seule sa présentation
- * change ; les emplacements {EV-nn}/{KB-nn} restent des badges (EvidenceText), comme avant. */
 import { useId, useState, type ReactNode } from "react";
 import type { Evidence } from "../../api/types";
 import type { Lang } from "../../lib/i18n";
@@ -16,17 +12,12 @@ const isList = (b: Block): b is ListBlock => b.kind === "ul" || b.kind === "ol";
 const LIST_ITEM = /^(?:[-*•–]|\d{1,2}[.)])\s+/;
 const HEADING = /^#{1,6}\s+/;
 const QUOTE_LINE = /^>\s?/;
-/* Paragraphe ou élément de liste consacré à une règle, présenté comme une entrée : « R2 : … », « R2 – … »,
- * « **R2 (perte maximale)** : … », « Règle R2 : … ». Une phrase qui commence par une règle (« R1 s'inspire de… »)
- * n'en est pas une : elle reste entière. */
 const RULE_START = /^(?:\*\*)?(?:[Rr][èeé]gle\s+|[Rr]ule\s+)?R(?:10|[1-9])(?!\d)\s*(?:\([^)\n]{0,60}\)\s*)?(?:\*\*)?\s*(?:\([^)\n]{0,60}\)\s*)?(?::|[–—-]\s)/;
 const PLACEHOLDER_ONLY = /^\{(?:EV|KB)-\d+\}$/;
 
-/** Un texte de règle plus court que SHOW_ALL reste entier ; sinon la partie visible tient en HEAD_MAX caractères (≈ une ligne). */
 const SHOW_ALL = 160;
 const HEAD_MAX = 110;
 
-/** Découpe la réponse en blocs : une ligne vide sépare deux blocs ; « - », « * », « • », « – » ou « 1. » ouvrent un élément de liste. */
 export function parseBlocks(text: string): Block[] {
   const blocks: Block[] = [];
   for (const chunk of text.replace(/\r\n?/g, "\n").split(/\n[ \t]*\n/)) {
@@ -48,7 +39,7 @@ export function parseBlocks(text: string): Block[] {
         endPara(); endList();
         blocks.push({ kind: "h", text: line.replace(HEADING, "") });
       } else if (list && /^\s/.test(raw)) {
-        list.items[list.items.length - 1] += `\n${line}`; // suite indentée de l'élément précédent
+        list.items[list.items.length - 1] += `\n${line}`;
       } else {
         endList();
         para.push(line);
@@ -62,7 +53,6 @@ export function parseBlocks(text: string): Block[] {
 function paragraph(lines: string[]): Block {
   if (lines.every((l) => QUOTE_LINE.test(l))) return { kind: "quote", text: lines.map((l) => l.replace(QUOTE_LINE, "")).join("\n") };
   const text = lines.join("\n");
-  // Passage cité mot pour mot (extrait réglementaire en anglais, entre guillemets) : affiché comme une citation.
   if (/^[«“"]/.test(text) && /[»”"][.,;]?$/.test(text)) return { kind: "quote", text };
   return { kind: "p", text };
 }
@@ -70,7 +60,6 @@ function paragraph(lines: string[]): Block {
 type Span = { kind: "text" | "strong" | "code"; text: string; start: number; end: number };
 const INLINE = /\*\*(\S(?:[\s\S]*?\S)?)\*\*|`([^`\n]+)`/g;
 
-/** Segments en ligne : **gras**, `code`, texte. Les positions servent à ne jamais couper dans un segment. */
 export function spans(text: string): Span[] {
   const out: Span[] = [];
   let last = 0;
@@ -87,8 +76,6 @@ export function spans(text: string): Span[] {
 
 const visibleLength = (s: string) => s.replace(/\*\*|`/g, "").length;
 
-/** Position de coupure d'une règle repliée : fin de la première ligne ou de la première phrase, sinon dernier espace
- *  avant HEAD_MAX (avec « … »). Jamais dans un gras, un code ou un emplacement. null : la règle reste entière. */
 export function ruleCut(text: string): { at: number; ellipsis: boolean } | null {
   if (visibleLength(text) <= SHOW_ALL) return null;
   const segments = spans(text);
@@ -100,7 +87,6 @@ export function ruleCut(text: string): { at: number; ellipsis: boolean } | null 
   const newline = text.indexOf("\n");
   if (newline > 0 && fits(newline) && !inside(newline)) return { at: newline, ellipsis: false };
 
-  // Fin de phrase : ponctuation, espace, puis majuscule, guillemet, parenthèse ou emplacement (pas « art. 13 »).
   for (const m of text.matchAll(/[.!?…](?:\*\*)?(?=\s+[A-ZÀ-ÖØ-Þ«"“({[])/g)) {
     const at = (m.index ?? 0) + m[0].length;
     if (!fits(at)) break;
@@ -112,7 +98,6 @@ export function ruleCut(text: string): { at: number; ellipsis: boolean } | null 
   return null;
 }
 
-/** Met en gras l'identifiant en tête d'une règle présentée comme « R2 : … » ou « R2 (perte maximale) … », s'il ne l'est pas. */
 function emphasizeRule(text: string): string {
   return text.startsWith("**") ? text : text.replace(/^((?:[Rr][èeé]gle\s+|[Rr]ule\s+)?R(?:10|[1-9]))(?=\s*[:(–—-])/, "**$1**");
 }
@@ -130,7 +115,6 @@ function Inline({ text, evidence, lang, resolve }: { text: string; evidence: Evi
   );
 }
 
-/** Règle repliée sur sa première phrase ; « Voir plus » affiche le texte entier, « Voir moins » le replie. */
 function RuleText({ text, render, lang }: { text: string; render: (s: string) => ReactNode; lang: Lang }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -150,7 +134,6 @@ export default function MessageText({ text, evidence, lang, resolve }: {
   text: string;
   evidence: Evidence[];
   lang: Lang;
-  /** Le message porte un run : ses emplacements deviennent des badges de preuve. */
   resolve: boolean;
 }) {
   const render = (s: string) => <Inline text={s} evidence={evidence} lang={lang} resolve={resolve} />;

@@ -19,7 +19,7 @@ from backend.agents.data.store import DataStore
 from backend.agents.engine.analytics import max_drawdown, native_series
 
 PERIOD_IDS = ("y2022", "covid_2020", "rate_hikes", "crypto_crash")
-MIN_HIKES = 2  # un cycle de hausse compte au moins deux relèvements consécutifs
+MIN_HIKES = 2
 
 LABELS = {
     "y2022": "Stress period: calendar year 2022",
@@ -83,8 +83,6 @@ def derive_period(store: DataStore, period_id: str) -> StressPeriod:
             changes = changes[changes != 0]
             if changes.empty:
                 continue
-            # Dernier cycle de hausse : suite d'au moins MIN_HIKES relèvements sans baisse
-            # entre eux. Une hausse isolée (début de cycle en cours) ne forme pas une période.
             runs: list[list[pd.Timestamp]] = []
             current: list[pd.Timestamp] = []
             for day, delta in changes.items():

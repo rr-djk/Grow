@@ -1,20 +1,16 @@
-/* Types du contrat d'API Grow v0.4.0 (section data_schemas). Toute modification passe par l'équipe. */
-
 export type Currency = "CAD" | "USD";
-export type RiskLevel = "low" | "low_moderate" | "moderate" | "high"; // ancienne échelle (0.4.6) : plus envoyée, gardé pour la compatibilité de lecture
+export type RiskLevel = "low" | "low_moderate" | "moderate" | "high";
 
 export type ErrorCode =
   | "UNAUTHORIZED" | "FORBIDDEN" | "VALIDATION_ERROR" | "CONVERSATION_NOT_FOUND"
   | "PORTFOLIO_NOT_FOUND" | "ASSET_NOT_FOUND" | "MANDATE_NOT_FOUND" | "RUN_NOT_FOUND"
   | "MANDATE_NOT_CONFIRMED" | "GUARDRAIL_BLOCKED" | "AGENT_TIMEOUT" | "INTERNAL"
-  | "NETWORK"; // NETWORK : côté client seulement (aucune réponse du serveur)
+  | "NETWORK";
 
 export type Jurisdiction =
   | "CA" | "QC" | "ON" | "BC" | "AB" | "SK" | "MB" | "NB" | "NS" | "PE" | "NL" | "YT" | "NT" | "NU";
 
 export type InvestorProfile = {
-  /* v0.4.6 : une seule échelle 1 à 5 ; riskLevel (ancienne échelle à quatre libellés) n'est plus envoyé.
-   * Les profils anciens sans riskCapacity restent lisibles (affiché « à compléter »). */
   riskLevel?: RiskLevel;
   riskTolerance?: number;
   riskCapacity?: number;
@@ -38,7 +34,7 @@ export type User = {
 export type Conversation = {
   sessionId: string;
   title?: string;
-  userLanguage?: string; // ISO 639-1, détecté par agent-orchestrator
+  userLanguage?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -51,7 +47,6 @@ export type ExplanationStep = {
 };
 export type ExplanationCheck = {
   agentId: string; rule: string; status: "pass" | "warn" | "fail" | "not_verified"; message: string;
-  /* 0.4.4 : motif calculé par module-rules et scénario (0, 1, 2) si la règle porte sur un scénario. */
   reasonCode?: string;
   scenario?: number;
 };
@@ -71,12 +66,10 @@ export type Message = {
   status: "done" | "pending" | "error";
   createdAt: string;
   explanation?: Explanation;
-  /* v0.4.0 : cadrage de l'orchestrateur */
   quickReplies?: string[];
   mandateDraft?: MandateCreateRequest;
   runId?: string;
 };
-/* v0.4.8 : saisie vocale (api-speech-session) */
 export type SpeechSession = { url: string; languageCode: "fr-CA" | "en-US"; sampleRate: number; expiresIn: number };
 
 export type MessageCreateResponse = { userMessage: Message; assistantMessage: Message };
@@ -120,8 +113,6 @@ export type ModuleInfo = { id: string; name: string; role: string };
 export type ToolInfo = { id: string; description: string; reads?: string[] };
 export type AgentsRegistry = { agents: AgentInfo[]; modules?: ModuleInfo[]; tools: ToolInfo[] };
 
-/* ===== v0.4.0 : mandats et runs (Analyses) ===== */
-
 export type MandateMode = "add_asset" | "rebalance" | "diagnose" | "build";
 export type MandateObjective = "growth" | "income" | "preservation" | "project" | "retirement";
 export type MandateOperation = {
@@ -132,54 +123,47 @@ export type MandateOperation = {
   currency?: Currency;
 };
 
-/* schema-mandate-create-request : proposé par l'orchestrateur ou édité par les curseurs, confirmé par POST mandates */
 export type MandateCreateRequest = {
   portfolioId: string;
   mode: MandateMode;
   objective: MandateObjective;
   objectiveDetail?: string;
   horizonYears: number;
-  riskTolerance: number; // 1 à 5
-  riskCapacity: number; // 1 à 5
-  maxAcceptableLossPct?: number; // absent = défaut par horizon (hypothèse d'équipe)
+  riskTolerance: number;
+  riskCapacity: number;
+  maxAcceptableLossPct?: number;
   constraints?: string[];
   preferences?: {
     esg?: boolean;
     excludedSectors?: string[];
     excludedAssetClasses?: string[];
-    /** Mode build (0.4.12), facultatifs : noms anglais d'industries du jeu. */
     excludedIndustries?: string[];
-    preferredIndustries?: { industry: string; minWeight?: number | null }[]; // minWeight en %
+    preferredIndustries?: { industry: string; minWeight?: number | null }[];
   };
   province: Jurisdiction;
-  userLanguage: string; // ISO 639-1 ; tous les champs texte du mandat sont en anglais
+  userLanguage: string;
   operations?: MandateOperation[];
   subjectTicker?: string;
-  /* 0.4.5 : comparaison par catégorie d'actifs demandée par l'utilisateur (scénario 2).
-   * L'orchestrateur ne le met jamais ; seul le bouton de comparaison du front le pose. */
-  buildAmount?: number; // 0.4.16 : mode build, montant fictif en CAD
+  buildAmount?: number;
   compareCategory?: "short-term-bonds" | "aggregate-bonds" | "balanced-allocation" | "canadian-equity" | "us-equity" | "global-equity";
   fieldSources?: Record<string, "persona" | "user_answer" | "team_assumption" | "slider">;
 };
 
-/* schema-mandate-warning (contrat 0.4.1). Les mandats enregistrés avant 0.4.1 portent des chaînes : accepter les deux. */
 export type MandateWarning = { code: string; message: string; params?: Record<string, string | number> };
 
-/* schema-mandate : réponse de POST/GET mandates */
 export type Mandate = {
   sessionId: string;
   version: number;
   mandate: MandateCreateRequest;
-  riskProfile: number; // = min(riskTolerance, riskCapacity) (R1)
+  riskProfile: number;
   effectiveMaxLossPct: number;
   warnings?: (MandateWarning | string)[];
   changedFields?: string[];
   confirmedAt: string;
 };
 
-/* schema-evidence : seule source des chiffres et citations affichés (EV-nn / KB-nn) */
 export type Evidence = {
-  id: string; // EV-nn ou KB-nn
+  id: string;
   kind: "metric" | "etf_fact" | "regulation" | "assumption";
   label: string;
   value?: number;
@@ -196,7 +180,6 @@ export type Evidence = {
   jurisdiction?: string;
   url?: string;
   caveats?: string[];
-  /* 0.4.7 : champs portés par le nouveau corpus par section (absents des anciens runs). */
   documentType?: "regulation" | "companion_policy" | "staff_notice" | "guidance_note" | "bulletin" | "rule" | "web_page" | "proposed_regulation_notice" | "disclosure_document";
   regulator?: string;
   status?: "en_vigueur" | "projet";
@@ -204,17 +187,14 @@ export type Evidence = {
   language?: string;
 };
 
-/* schema-scenario : 0 actuel, 1 idée telle quelle, 2 comparaison par catégorie (0.4.5, sur demande).
- * 0.4.4 : le front ne lit plus `verdict` — le décompte des règles vient de run.verdicts. */
-/* Mode build (0.4.12) : un titre du portefeuille construit, avec les preuves EV-nn de ses chiffres */
 export type BuiltHolding = {
   symbol: string;
   name: string;
   industry: string;
-  weight: number; // %
+  weight: number;
   evidence: { weight: string; beta: string; expectedReturn: string };
-  quantity?: number; // 0.4.16 : calculé par le moteur (poids x montant / cours), recopié tel quel par « Adopter »
-  price?: number; // dernier cours de clôture, devise de cotation (= avgCost)
+  quantity?: number;
+  price?: number;
   currency?: string;
 };
 export type BuildParameter = { key: string; value: number | string[] | { industry: string; minWeight?: number | null }[]; riskProfile?: number; evidence?: string; currency?: string; origin?: "user" | "portfolio" | "default" };
@@ -225,30 +205,26 @@ export type Scenario = {
   description?: string;
   proxyNote?: string;
   allocation?: Slice[];
-  holdings?: BuiltHolding[]; // mode build seulement
-  parameters?: BuildParameter[]; // mode build seulement
-  metrics?: Record<string, string>; // mesure -> identifiant EV-nn
-  verdict?: "pass" | "warn" | "fail"; // ancien backend : présent mais ignoré
+  holdings?: BuiltHolding[];
+  parameters?: BuildParameter[];
+  metrics?: Record<string, string>;
+  verdict?: "pass" | "warn" | "fail";
 };
 
-/* schema-rule-verdict : R1..R10 */
 export type RuleVerdict = {
   rule: string;
   scenario?: number;
   status: "pass" | "warn" | "fail" | "not_verified";
   reasonCode: string;
-  evidence?: string[]; // EV-nn
-  citations?: string[]; // KB-nn, rempli par agent-auditor
+  evidence?: string[];
+  citations?: string[];
   threshold?: { value: number; nature: "text" | "team_assumption" };
   messageEn?: string;
-  message?: string; // traduit dans userLanguage par agent-orchestrator
+  message?: string;
 };
 
-/* 0.4.7 : sections fixées par le code du backend (R5, R9), présentes seulement si le corpus ingéré
- * correspond à fixed_citations.json. À afficher près des mentions, jamais sous une règle non déclenchée. */
 export type NoticeCitations = { R5?: string[]; R9?: string[] };
 
-/* schema-narrative : 4 sections, emplacements {EV-nn}/{KB-nn} seulement, aucun chiffre écrit à la main */
 export type NarrativeSectionKey = "data_used" | "why" | "limits" | "what_would_change";
 export type NarrativeSection = { key: NarrativeSectionKey; textEn: string; text: string };
 export type Narrative = {
@@ -257,7 +233,6 @@ export type Narrative = {
   hiddenSentences?: { section: string; reason: string }[];
 };
 
-/* schema-verifier-report : score du vérificateur (module-verifier) */
 export type VerifierReport = {
   placeholdersResolved: number;
   placeholdersTotal: number;
@@ -266,15 +241,12 @@ export type VerifierReport = {
   placeholdersMatch: boolean;
 };
 
-/* schema-run : réponse de POST runs (status = partial) puis GET runs/{runId} (partial | done | error) */
 export type RunStatus = "partial" | "done" | "error";
 export type Run = {
   runId: string;
   sessionId: string;
   mandateVersion: number;
   status: RunStatus;
-  /* 0.4.4 : 2 = vocabulaire et citations du lot A. Absent = run produit par une version précédente :
-   * l'interface ignore ses citations de règles pass/not_verified et le signale. */
   rulesVersion?: number;
   datasetVersion: string;
   userLanguage: string;

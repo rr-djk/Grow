@@ -1,8 +1,3 @@
-/* Hook de saisie vocale : demande l'URL signée à api-speech-session, ouvre le WebSocket vers Transcribe,
- * capte le micro (AudioWorklet), envoie le PCM 16 kHz et remonte le texte reconnu. L'envoi du message
- * reste toujours manuel. Transcribe détecte lui-même la langue parlée (fr-CA ou en-US, contrat 0.4.10).
- * À l'arrêt, le flux est terminé proprement : on attend les derniers résultats et on garde le texte
- * partiel restant, pour ne pas perdre la fin de la phrase. */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEMO } from "../api/demo";
 import { startSpeechSession } from "../api/endpoints";
@@ -11,14 +6,12 @@ import { MAX_SESSION_MS, PcmResampler, TARGET_RATE, encodeAudioEvent, parseTrans
 
 export type SpeechState = "idle" | "connecting" | "listening" | "finishing" | "denied" | "error";
 
-const FLUSH_MS = 3000; // délai maximal pour recevoir les derniers résultats après l'arrêt
+const FLUSH_MS = 3000;
 
-/** Contexte audio à 16 kHz quand le navigateur le permet (rééchantillonnage de qualité fait par lui) ;
- * sinon à la fréquence native, et PcmResampler filtre et convertit. */
 function openAudioContext(stream: MediaStream): AudioContext {
   try {
     const c = new AudioContext({ sampleRate: TARGET_RATE });
-    c.createMediaStreamSource(stream); // Firefox refuse une source d'une autre fréquence : on le saura ici
+    c.createMediaStreamSource(stream);
     return c;
   } catch {
     return new AudioContext();
@@ -34,9 +27,7 @@ export function useSpeechToText(lang: Lang, onFinal: (text: string) => void, onP
   cb.current = { onFinal, onPartial };
   const supported = !DEMO && speechSupported();
 
-  /** Arrêt de la dictée : le texte en cours de reconnaissance est conservé. */
   const stop = useCallback(() => session.current?.stop(), []);
-  /** Abandon immédiat (envoi du message, fermeture du composant) : rien n'est ajouté au champ. */
   const abort = useCallback(() => session.current?.abort(), []);
 
   const start = useCallback(async () => {
@@ -54,7 +45,7 @@ export function useSpeechToText(lang: Lang, onFinal: (text: string) => void, onP
 
     const releaseAudio = () => {
       window.clearTimeout(timer);
-      if (node) { node.port.onmessage = null; try { node.disconnect(); } catch { /* déjà détaché */ } }
+      if (node) { node.port.onmessage = null; try { node.disconnect(); } catch {  } }
       tracks.forEach((t) => t.stop());
       tracks = [];
       if (ctx) { void ctx.close().catch(() => {}); ctx = null; }
@@ -64,7 +55,7 @@ export function useSpeechToText(lang: Lang, onFinal: (text: string) => void, onP
       ended = true;
       window.clearTimeout(flushTimer);
       releaseAudio();
-      if (ws) { ws.onclose = null; ws.onerror = null; ws.onmessage = null; try { ws.close(); } catch { /* déjà fermé */ } }
+      if (ws) { ws.onclose = null; ws.onerror = null; ws.onmessage = null; try { ws.close(); } catch {  } }
       const rest = lastPartial.trim();
       lastPartial = "";
       cb.current.onPartial("");
@@ -76,9 +67,9 @@ export function useSpeechToText(lang: Lang, onFinal: (text: string) => void, onP
       stop: () => {
         if (finishing || ended) return;
         finishing = true;
-        releaseAudio(); // le micro s'arrête tout de suite ; la connexion attend les derniers résultats
+        releaseAudio();
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(encodeAudioEvent(new Int16Array(0))); // fin du flux
+          ws.send(encodeAudioEvent(new Int16Array(0)));
           setState("finishing");
           flushTimer = window.setTimeout(() => end("idle", true), FLUSH_MS);
         } else end("idle", true);

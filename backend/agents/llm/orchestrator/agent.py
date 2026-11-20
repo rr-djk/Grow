@@ -34,7 +34,7 @@ def history_messages(items: list[dict[str, Any]], limit: int = 20) -> list[dict[
             continue
         messages.append({"role": role, "content": [{"text": text}]})
     if messages and messages[-1]["role"] == "user":
-        messages.pop()  # le tour courant est envoyé à part
+        messages.pop()
     return messages
 
 

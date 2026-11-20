@@ -23,8 +23,6 @@ def _required(name: str) -> str:
     return value
 
 
-# --- Tables DynamoDB (contrat : db-users, db-conversations, db-messages, db-portfolios, db-analyses) ---
-
 
 def users_table() -> str:
     """Nom de la table Users (partition : userId)."""
@@ -54,8 +52,6 @@ def analyses_table() -> str:
     return _required("ANALYSES_TABLE")
 
 
-# --- Jeu de données (contrat : storage-dataset) ---
-
 
 def dataset_bucket() -> str:
     """Nom du bucket S3 privé qui héberge le jeu de données."""
@@ -66,10 +62,6 @@ def dataset_version() -> str:
     """Version du jeu de données à lire (préfixe dataset/{version}/ du bucket)."""
     return _required("DATASET_VERSION")
 
-
-# --- Modèles Bedrock (déploiement : Claude Sonnet 5.5, région us-east-1) ---
-# Un modèle par agent, lu dans la config pour pouvoir en changer sans toucher au code.
-# Valeur attendue en déploiement : un profil d'inférence, ex. global.anthropic.claude-sonnet-5-5.
 
 
 def model_orchestrator() -> str | None:
@@ -86,8 +78,6 @@ def model_writer() -> str | None:
     """Profil d'inférence Bedrock de agent-writer, None tant que non configuré."""
     return os.environ.get("MODEL_WRITER")
 
-
-# --- Knowledge Base et Guardrails Bedrock (contrat : srv-bedrock-kb, srv-bedrock-guardrails) ---
 
 
 def kb_id() -> str | None:
@@ -120,8 +110,6 @@ def rules_config_path() -> str | None:
     return os.environ.get("RULES_CONFIG_PATH")
 
 
-# --- Amazon Translate (traduction de la restitution du run, anglais vers fr-CA) ---
-
 
 DEFAULT_TRANSLATE_TERMINOLOGY = "grow-finance-en-fr"
 
@@ -136,15 +124,11 @@ def translate_terminology() -> str | None:
     return value.strip() or None
 
 
-# --- Divers ---
-
 
 def log_level() -> str:
     """Niveau de journalisation, INFO par défaut."""
     return os.environ.get("LOG_LEVEL", "INFO")
 
-
-# --- Observabilité Langfuse / OpenTelemetry (optionnel, fail-open) ---
 
 
 def langfuse_public_key() -> str | None:

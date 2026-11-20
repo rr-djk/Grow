@@ -37,8 +37,7 @@ from backend.common.validation import validate_mandate_create
 
 MAX_ASSETS = 20
 MAX_SEARCH_TERMS = 8
-MIN_FUZZY_CHARS = 4  # sous ce seuil, pas de repli par sous-chaîne : « PM » ne doit pas trouver JPM
-# Noms français courants des émetteurs de l'univers (les noms de l'univers sont en anglais).
+MIN_FUZZY_CHARS = 4
 NAME_ALIASES = {
     "banque royale": "royal bank", "banque td": "toronto dominion", "banque de montreal": "bank of montreal",
     "banque scotia": "nova scotia", "banque de la nouvelle ecosse": "nova scotia",
@@ -69,8 +68,6 @@ def _unknown_ticker(ctx: RequestContext, ticker: str) -> dict[str, Any]:
     hint = f" Closest symbols: {', '.join(close)}." if close else " Use search_assets to find the exact symbol."
     return _error(f"Unknown ticker '{ticker}': it must be an exact symbol of the dataset universe.{hint}")
 
-
-# --- orchestrateur --------------------------------------------------------
 
 
 def _norm(text: Any) -> str:
@@ -127,7 +124,6 @@ def search_assets(ctx: RequestContext, query: str, asset_class: str | None = Non
                 found.append((rank, ticker, row))
         found.sort(key=lambda x: (x[0], x[1]))
         if not found:
-            # Symboles proches (suffixe de place retiré : « RCI.A » ~ « RCI-B.TO »), seuil serré pour éviter le bruit.
             scored = sorted(
                 ((difflib.SequenceMatcher(None, term_n, _norm(t.split(".")[0])).ratio(), t) for t, _, _, _ in rows),
                 key=lambda x: (-x[0], x[1]),
@@ -143,11 +139,11 @@ def search_assets(ctx: RequestContext, query: str, asset_class: str | None = Non
                 "sector": row["sector"], "currency": row["currency"],
             }
             if multi:
-                item["query"] = term  # quelle saisie a trouvé ce titre
+                item["query"] = term
             items.append(item)
     result: dict[str, Any] = {"items": items[:MAX_ASSETS]}
     if not_found:
-        result["notFound"] = not_found  # saisies sans correspondance, avec les symboles proches
+        result["notFound"] = not_found
     return result
 
 
@@ -178,7 +174,6 @@ def get_portfolio(ctx: RequestContext) -> dict[str, Any]:
 def get_profile(ctx: RequestContext) -> dict[str, Any]:
     user = users_repo.get_user(ctx.user_id)
     profile = (user or {}).get("investorProfile")
-    # riskLevel (ancienne échelle à quatre libellés) n'est plus transmis : une seule échelle, tolérance et capacité 1-5.
     return {"investorProfile": {k: v for k, v in profile.items() if k != "riskLevel"} if profile else profile}
 
 
@@ -255,9 +250,7 @@ def propose_mandate(ctx: RequestContext, draft: dict[str, Any]) -> dict[str, Any
             return {"valid": False, "errors": ["draft must be a JSON object."]}
     if not isinstance(draft, dict):
         return {"valid": False, "errors": ["draft must be a JSON object."]}
-    # Valeurs de contexte, jamais celles du modèle.
     draft = {**draft, "portfolioId": ctx.portfolio_id, "userLanguage": ctx.user_language}
-    # La comparaison par catégorie est une demande de l'utilisateur (bouton) : l'orchestrateur ne la met jamais.
     draft.pop("compareCategory", None)
     if ctx.province and "province" not in draft:
         draft["province"] = ctx.province
@@ -282,7 +275,6 @@ def propose_mandate(ctx: RequestContext, draft: dict[str, Any]) -> dict[str, Any
     if mandate["mode"] == "diagnose" and not mandate.get("subjectTicker"):
         return {"valid": False, "errors": ["subjectTicker is required for diagnose."]}
     if (mandate.get("fieldSources") or {}).get("riskCapacity") == "team_assumption":
-        # Observé dans Langfuse le 2026-11-15 : capacité 2 inventée et marquée hypothèse d'équipe, sans question à l'utilisateur.
         return {"valid": False, "errors": [
             "riskCapacity cannot be a team assumption: use the profile value, or ask the user for it with quick replies."]}
     derived = evaluate_mandate(mandate)
@@ -313,8 +305,6 @@ def read_evidence(ctx: RequestContext, evidence_id: str | None = None) -> dict[s
     ]
     return {"items": summary, "verdicts": verdicts}
 
-
-# --- module-engine --------------------------------------------------------
 
 
 def _resample(series: pd.Series, frequency: str) -> tuple[pd.Series, str]:
@@ -496,7 +486,7 @@ def portfolio_impact(ctx: RequestContext, mandate_version: int) -> dict[str, Any
         return _error(f"No confirmed mandate version {mandate_version} in this session.")
     ctx.portfolio_id = mandate_item["mandate"]["portfolioId"]
     portfolio = portfolios_repo.get_portfolio(ctx.user_id, ctx.portfolio_id)
-    from backend.agents.engine.registry import EvidenceRegistry  # registre propre au run
+    from backend.agents.engine.registry import EvidenceRegistry
 
     registry = EvidenceRegistry(ctx.user_language)
     result = run_engine(ctx.store, mandate_item, portfolio, registry)
@@ -531,16 +521,12 @@ def concentration(ctx: RequestContext) -> dict[str, Any]:
     return {k: result[k] for k in ("topSingle", "bySector", "byCountry", "byCurrency", "techLookThrough", "caveats")} | {"evidenceIds": []}
 
 
-# --- module-rules ---------------------------------------------------------
-
 
 def check_rules(ctx: RequestContext) -> dict[str, Any]:
     if ctx.engine_result is None or ctx.mandate_item is None:
         return _error("Run portfolio_impact first: no scenarios in this run.")
     return {"verdicts": run_rules(ctx.store, ctx.mandate_item, ctx.engine_result)}
 
-
-# --- agent-auditor --------------------------------------------------------
 
 
 _PASSAGES_LOCK = threading.Lock()
@@ -555,7 +541,7 @@ def search_regulation(ctx: RequestContext, query: str, subjects: list[str] | Non
         return _error(f"subjects must be a list among: {', '.join(kb.KNOWN_SUBJECTS)}.")
     passages = kb.retrieve(query.strip()[:500], ctx.jurisdictions, subjects, client=ctx.clients.get("kb"))
     shown = []
-    with _PASSAGES_LOCK:  # l'auditeur lance ses recherches en parallèle : les références P1, P2… restent uniques
+    with _PASSAGES_LOCK:
         for passage in passages:
             ref = f"P{len(ctx.passages) + 1}"
             ctx.passages[ref] = passage

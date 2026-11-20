@@ -15,7 +15,6 @@ from backend.api.routes import agents, conversations, mandates, portfolios, spee
 from backend.common.auth import get_user_id
 from backend.common.http import ApiError, error_response, request_id_from_event
 
-# Clé = routeKey exact d'API Gateway HTTP API (méthode + chemin, /v1 inclus).
 ROUTES: dict[str, Callable[..., dict[str, Any]]] = {
     "GET /v1/me": users.get_me,
     "PUT /v1/me/profile": users.put_profile,
@@ -57,7 +56,6 @@ def handle_request(
             error.request_id = request_id
         return error_response(error)
     except Exception:
-        # Aucun corps de requête ni détail interne dans la réponse.
         return error_response(ApiError("INTERNAL", "Erreur interne.", request_id))
 
 

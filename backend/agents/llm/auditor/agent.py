@@ -107,14 +107,13 @@ def _candidates_for(ctx: RequestContext, groups: dict[str, dict[str, Any]]) -> d
         rule, subject = item
         try:
             result = TOOLBOX.call(AGENT_ID, "search_regulation", ctx, query=rule_query(rule, motive[rule][1]), subjects=[subject])
-        except Exception as exc:  # une recherche en échec n'arrête pas les autres (fail-closed : moins de passages)
+        except Exception as exc:
             log_event("agent.failure", agentId=AGENT_ID, reason=f"search:{type(exc).__name__}", sessionId=ctx.session_id)
             return rule, subject, []
         refs = [p["ref"] for p in result.get("passages", [])]
         return rule, subject, sorted([(ref, ctx.passages[ref]) for ref in refs], key=lambda rp: -rp[1]["score"])
 
     with ThreadPoolExecutor(max_workers=SEARCH_WORKERS) as pool:
-        # Contexte OpenTelemetry copié dans chaque thread : sinon les spans kb.retrieve deviennent des traces orphelines.
         futures = [pool.submit(contextvars.copy_context().run, run, item) for item in searches]
         results = [future.result() for future in futures]
     by_rule: dict[str, list[list[tuple[str, dict[str, Any]]]]] = {}
@@ -143,10 +142,10 @@ def audit(ctx: RequestContext, verdicts: list[dict[str, Any]], registry: Evidenc
     """Renvoie les verdicts enrichis (citations, messageEn) ; inscrit les KB-nn au registre."""
     groups = {k: g for k, g in verdict_groups(verdicts).items() if needs_regulation(g["rule"], g["reasonCode"], g["status"])}
     if not groups:
-        return verdicts  # rien à fonder : motifs par défaut, aucun appel de modèle
+        return verdicts
     candidates = _candidates_for(ctx, groups)
     if not any(candidates.get(g["rule"]) for g in groups.values()):
-        return verdicts  # aucun passage dans {CA, province} : pas de citation, motifs par défaut
+        return verdicts
     shown = _prompt_groups(groups, candidates)
     try:
         report = run_agent(AGENT_ID, prompts.SYSTEM_PROMPT, prompts.audit_prompt(json.dumps(shown, ensure_ascii=False)), ctx,
@@ -165,7 +164,7 @@ def audit(ctx: RequestContext, verdicts: list[dict[str, Any]], registry: Evidenc
         for ref in item.passage_refs:
             passage = allowed.get(ref)
             if passage is None:
-                continue  # référence inventée, ou passage d'une autre règle : ignorée
+                continue
             if ref not in kb_by_ref:
                 kb_by_ref[ref] = registry.add_regulation(
                     document=passage["document"], section=passage.get("section"), excerpt=passage["excerpt"],

@@ -17,10 +17,7 @@ export default function Chart({
   axisLabel: (ts: number) => string;
   dim?: boolean;
   intraday?: boolean;
-  /** Ligne pointillée de référence (ex. clôture précédente) */
   baseline?: number | null;
-  /** Sens imposé de la couleur (ex. gain ou perte par rapport au montant investi). Absent : fin de la courbe
-   *  comparée à la référence (baseline, sinon premier point). */
   trend?: "up" | "down";
 }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -36,8 +33,8 @@ export default function Chart({
   const line = values.map((v, i) => `${i ? "L" : "M"}${(xp(i) * 10).toFixed(1)} ${(yp(v) * 3).toFixed(1)}`).join(" ");
   const ref = baseline ?? values[0];
   const up = trend ? trend === "up" : values[n - 1] >= ref;
-  const color = up ? "#1F7A4D" : "#B4433A"; // vert = gain, rouge = perte
-  const gradientId = `area-${useId().replace(/:/g, "")}`; // un dégradé par graphique (plusieurs sur une page)
+  const color = up ? "#1F7A4D" : "#B4433A";
+  const gradientId = `area-${useId().replace(/:/g, "")}`;
   const labels = [0, 0.33, 0.66, 1].map((f) => timestamps[Math.round(f * (n - 1))]);
 
   return (

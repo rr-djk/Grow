@@ -18,11 +18,9 @@ from typing import Any
 from backend.common.categories import category_ids
 from backend.common.http import ApiError
 
-# Même borne que la couche d'accès DynamoDB (backend/common/repositories).
 MAX_LIMIT = 100
 
 
-# Juridictions provinciales/territoriales du contrat (conventions.jurisdictions hors CA).
 PROVINCES = (
     "QC",
     "ON",
@@ -40,7 +38,7 @@ PROVINCES = (
 )
 
 MANDATE_MODES = ("add_asset", "rebalance", "diagnose", "build")
-MAX_BUILD_AMOUNT = 100_000_000  # montant fictif du mode build (CAD), borne de bon sens
+MAX_BUILD_AMOUNT = 100_000_000
 MANDATE_OBJECTIVES = ("growth", "income", "preservation", "project", "retirement")
 OPERATION_ACTIONS = ("add", "remove", "set_weight")
 CURRENCIES = ("CAD", "USD")
@@ -209,8 +207,6 @@ def validate_investor_profile(body: dict[str, Any]) -> dict[str, Any]:
             "excludedAssetClasses",
         ),
     )
-    # riskLevel (ancienne échelle à quatre libellés) est accepté pour ne pas casser les anciens clients, puis ignoré :
-    # une seule échelle existe (tolérance et capacité de 1 à 5, niveau retenu = le plus bas des deux ; lot C).
     _string(body, "riskLevel", required=False)
     risk_tolerance = _integer(body, "riskTolerance")
     assert risk_tolerance is not None
@@ -314,9 +310,6 @@ def _validate_operation(raw: Any) -> dict[str, Any]:
             values = ", ".join(CURRENCIES)
             raise _validation_error(f"currency doit être l'un de : {values}.")
         operation["currency"] = currency
-    # Contrat (schema-operation) : add et remove portent un montant, set_weight un poids cible.
-    # Une opération mal formée n'est jamais interprétée : remove sans montant retire la position
-    # entière, et un « weight » sur add/remove était ignoré en silence.
     if action == "add" and "amount" not in operation:
         raise _validation_error("add exige un amount (montant dans currency) ; weight n'est valide que pour set_weight.")
     if action == "set_weight" and "weight" not in operation:

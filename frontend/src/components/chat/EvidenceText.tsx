@@ -1,26 +1,17 @@
-/* Rendu des textes avec emplacements {EV-nn}/{KB-nn} : chaque emplacement devient un badge cliquable
- * qui ouvre la carte de preuve (run.evidence). Règle du contrat : un emplacement inconnu n'affiche jamais
- * de chiffre ; le front ne fabrique aucune valeur.
- * Lot E2 : section affichée telle quelle, type de document, régulateur, « Projet, <année> » ;
- * lot A : principe dont s'inspire la règle, avec la mention des personnes inscrites pour
- * 31-103, 31-103CP et 31-368. */
 import { useState } from "react";
 import type { Evidence } from "../../api/types";
 import { t, type Lang } from "../../lib/i18n";
 
 const PLACEHOLDER = /\{(EV|KB)-(\d+)\}/g;
 
-/* Documents dont le texte décrit une obligation des personnes inscrites (lot A, point 6). */
 const REGISTRANT_OBLIGATION = /31-103|31-103CP|31-368/;
 
-/** « Projet, 2022 » pour un avis de projet de règlement (FCAA). */
 function statusLabel(ev: Evidence, lang: Lang): string | undefined {
   if (ev.status !== "projet") return undefined;
   const year = ev.asOf ? ev.asOf.slice(0, 4) : "";
   return (t("proof.regulationTypeProposed", lang) as string).replace("{year}", year);
 }
 
-/** Un emplacement dans le texte, résolu ou non. */
 export function EvidenceBadge({ ev, lang }: { ev: Evidence | undefined; lang: Lang }) {
   const [open, setOpen] = useState(false);
   const label = ev ? ev.id : "id inconnu";
@@ -41,7 +32,6 @@ export function EvidenceBadge({ ev, lang }: { ev: Evidence | undefined; lang: La
   );
 }
 
-/** Carte de preuve : méthode, période, devise, source, limites ; KB : document, section, extrait, juridiction, lien. */
 export function ProofCard({ ev, lang, onClose }: { ev: Evidence; lang: Lang; onClose: () => void }) {
   const row = (key: string, value?: React.ReactNode) =>
     value ? <div className="proof-row"><span className="muted small">{t(`proof.${key}`, lang)}</span><span className="pre">{value}</span></div> : null;
@@ -118,7 +108,6 @@ export function ProofCard({ ev, lang, onClose }: { ev: Evidence; lang: Lang; onC
   );
 }
 
-/** Texte narratif : remplace chaque emplacement par son badge. L'ordre du texte est conservé. */
 export default function EvidenceText({ text, evidence, lang }: { text: string; evidence: Evidence[]; lang: Lang }) {
   const map = new Map(evidence.map((e) => [e.id, e]));
   const parts: React.ReactNode[] = [];

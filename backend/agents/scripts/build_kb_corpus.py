@@ -35,12 +35,12 @@ from backend.agents.tools.kb import DOCUMENT_TITLES, KNOWN_SUBJECTS, excerpt_of,
 
 HERE = Path(__file__).parent / "kb_corpus"
 CITABLE_REGULATORS = {"CSA", "CSA-IIROC", "CSA-CIRO", "CSA-AMF", "CIRO", "FSRA", "AMF", "FCAA"}
-PAGE_GROUP = 3  # pages par section quand le document n'a pas de numérotation fiable
+PAGE_GROUP = 3
 TOC_LEADER = re.compile(r"\.{4,}")
 BARE_PAGE_NUMBER = re.compile(r"^\s*(?:Page\s+)?\d{1,3}(?:\s*(?:of|/)\s*\d{1,3})?\s*$", re.IGNORECASE)
-MAX_METADATA_BYTES = 1500  # S3 Vectors : 2 Ko de métadonnées filtrables par vecteur (limites AWS) ; marge pour la KB
+MAX_METADATA_BYTES = 1500
 TITLE_MAX = 80
-NOTES_SUBJECT = "notes"  # fichiers de notes de bas de page : jamais ramenés par une recherche par sujet (et non citables)
+NOTES_SUBJECT = "notes"
 
 
 @dataclass
@@ -80,8 +80,6 @@ def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text.replace("’", "'").replace("‘", "'").replace(" ", " "))
 
 
-# --- extraction -----------------------------------------------------------------------------------------------
-
 
 def extract_pages(path: Path) -> list[str]:
     if path.suffix.lower() == ".pdf":
@@ -92,8 +90,6 @@ def extract_pages(path: Path) -> list[str]:
         return pages[:-1] if pages and not pages[-1].strip() else pages
     return [path.read_text(encoding="utf-8")]
 
-
-# --- nettoyage ------------------------------------------------------------------------------------------------
 
 
 def repeated_page_lines(pages: list[str]) -> set[str]:
@@ -121,7 +117,7 @@ def clean_lines(pages: list[str], cfg: dict[str, Any], removed: Removed, is_pdf:
                 continue
             if re.sub(r"\d+", "#", text) in headers:
                 removed.add("en-tête ou pied de page")
-            elif is_pdf and BARE_PAGE_NUMBER.match(text):  # une page web n'a pas de pages : un chiffre seul est un numéro de note
+            elif is_pdf and BARE_PAGE_NUMBER.match(text):
                 removed.add("numéro de page isolé")
             elif TOC_LEADER.search(text):
                 removed.add("ligne de table des matières")
@@ -156,8 +152,6 @@ def split_footnotes(lines: list[Line], removed: Removed) -> tuple[list[Line], li
     return kept, notes
 
 
-# --- découpage ------------------------------------------------------------------------------------------------
-
 
 def split_numbered(lines: list[Line], cfg: dict[str, Any], removed: Removed) -> list[Section]:
     levels = [re.compile(p) for p in cfg["levels"]]
@@ -175,7 +169,7 @@ def split_numbered(lines: list[Line], cfg: dict[str, Any], removed: Removed) -> 
                 break
         if matched:
             depth, num, title = matched
-            if len(levels) > 1:  # lettre de partie puis numéro : « C » puis « C.4 »
+            if len(levels) > 1:
                 stack = stack[:depth] + [num]
                 num = ".".join(stack)
             sections.append(current)
@@ -229,8 +223,6 @@ def prune(sections: list[Section], cfg: dict[str, Any], removed: Removed) -> lis
     return out
 
 
-# --- métadonnées ----------------------------------------------------------------------------------------------
-
 
 def short_title(title: str | None) -> str | None:
     if not title:
@@ -277,7 +269,7 @@ def build_metadata(base: dict[str, Any], doc_key: str, version: str, section: Se
     if title:
         attributes["section_titre"] = title
     if pages:
-        attributes["pages"] = pages  # PDF seulement : une page web n'a pas de numéro de page utile
+        attributes["pages"] = pages
     size = len(json.dumps({"metadataAttributes": attributes}, ensure_ascii=False).encode("utf-8"))
     if size > MAX_METADATA_BYTES:
         raise ValueError(f"{doc_key} {section.section}: métadonnées de {size} octets (> {MAX_METADATA_BYTES})")
@@ -290,8 +282,6 @@ def build_metadata(base: dict[str, Any], doc_key: str, version: str, section: Se
 def file_stem(doc_key: str, section: Section) -> str:
     return f"{doc_key}__s{section.section}" if section.section else f"{doc_key}__o{section.order:02d}"
 
-
-# --- construction ---------------------------------------------------------------------------------------------
 
 
 def build_document(path: Path, rules: dict[str, Any], proposal: dict[str, Any], version: str, out: Path) -> dict[str, Any]:

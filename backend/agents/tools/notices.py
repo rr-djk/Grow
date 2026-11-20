@@ -37,7 +37,7 @@ def pinned_for(rule: str, province: str | None) -> list[dict[str, Any]]:
     if not data or not version or data.get("corpus_version") != version:
         return []
     items = data.get("R5", []) if rule == "R5" else (data.get("R9", {}).get(province or "", []) if rule == "R9" else [])
-    return [c for c in items if c.get("jurisdiction") in ("CA", province)]  # la juridiction du mandat reste la règle
+    return [c for c in items if c.get("jurisdiction") in ("CA", province)]
 
 
 def register(registry: EvidenceRegistry, province: str | None) -> dict[str, list[str]]:

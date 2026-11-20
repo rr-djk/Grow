@@ -13,12 +13,6 @@ type Answers = Record<string, number>;
 export const AMOUNT_CHOICES = [10_000, 25_000, 50_000, 100_000] as const;
 const MIN_AMOUNT = 1_000, MAX_AMOUNT = 10_000_000;
 
-/**
- * Questionnaire de risque (lib/risk.ts) + province (v0.4.0 : filtre de la Knowledge Base, mentions R9).
- * Avec `showPreferences` (création du portefeuille) : critères ESG et marché géographique, obligatoires
- * (lib/esgMarket.ts), puis industries, facultatives. Ces questions ne comptent pas dans le score.
- * N'enregistre rien : `onSubmit` reçoit les réponses complètes, la province choisie et ces choix.
- */
 export default function RiskForm({
   initial = {}, initialProvince = "", showPreferences = false, showAmount = false, submitLabel, busy = false, onSubmit, children,
 }: {
@@ -38,7 +32,6 @@ export default function RiskForm({
   const missingProvince = !PROVINCES.some((p) => p.code === province);
   const missingEsg = showPreferences && esg === undefined;
   const missingMarket = showPreferences && markets.length === 0;
-  // Progression : toutes les questions obligatoires (risque, province, et ESG + marché à la création).
   const required = [
     ...QUESTIONS.map((q) => answers[q.id] !== undefined),
     !missingProvince,
@@ -137,7 +130,6 @@ export default function RiskForm({
   );
 }
 
-/** Résultat affiché : niveau retenu en mots (le plus bas de la tolérance et de la capacité, R1), puis le détail. */
 export function RiskResult({ answers, province }: { answers: Answers; province?: string }) {
   const { lang, L } = useT();
   const tolerance = answers.maxLoss + 1, capacity = answers.capacity + 1;

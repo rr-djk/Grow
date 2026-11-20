@@ -80,7 +80,7 @@ class EvidenceRegistry:
         }
         evidence.update({k: v for k, v in optional.items() if v is not None})
         if key:
-            evidence["key"] = key  # clé interne stable (non affichée), ex. volatility
+            evidence["key"] = key
         self.items.append(evidence)
         return evidence["id"]
 

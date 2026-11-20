@@ -1,6 +1,3 @@
-/* Marchés : explorateur de l'univers d'actifs, via l'API (api-market-search).
- * Le front ne calcule rien : prix, indicateurs et séries historiques viennent du back
- * (portefeuille : GET /portfolios/{id}/summary ; univers : GET /market/search). */
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
@@ -36,7 +33,6 @@ export default function Markets() {
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /* Recherche avec délai : l'appel part après 300 ms d'inactivité et une requête périmée est annulée. */
   useEffect(() => {
     const query = q.trim();
     if (!query && !assetClass) { setItems([]); setError(""); setLoading(false); return; }
@@ -58,7 +54,6 @@ export default function Markets() {
     return () => { clearTimeout(t); ctrl.abort(); };
   }, [q, assetClass]);
 
-  /* Raccourci « / » pour placer le curseur dans la recherche. */
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;

@@ -35,7 +35,7 @@ PORTFOLIO_METHOD = (
 )
 VOL_METHOD = "Standard deviation of daily returns x sqrt(252) (equities, ETFs) or sqrt(365) (crypto)."
 DD_METHOD = "Largest peak-to-trough decline of the value index over the window."
-HOLDING_LABEL_PREFIX = "Holding "  # preuves par titre du mode build : le rédacteur ne les lit pas (une ligne de portefeuille n'est pas un récit)
+HOLDING_LABEL_PREFIX = "Holding "
 BUILD_METHOD = (
     "Mean-variance model U = w'mu - (A/2) w'Sigma w: mu from the CAPM (beta against the S&P 500 index, risk-free rate), "
     "Sigma from the Ledoit-Wolf covariance of daily returns, constraints on single-stock and industry weights. "
@@ -65,13 +65,13 @@ class ScenarioAnalysis:
     concentration: dict[str, Any] = field(default_factory=dict)
     idea_assets: list[dict[str, Any]] = field(default_factory=list)
     portfolio_band: int | None = None
-    evidence: dict[str, str] = field(default_factory=dict)  # clé de mesure -> EV-nn
+    evidence: dict[str, str] = field(default_factory=dict)
     description: str | None = None
     proxy_note: str | None = None
     notes: list[str] = field(default_factory=list)
-    names: dict[str, str] = field(default_factory=dict)  # symbole d'approximation -> libellé de la catégorie (texte visible)
-    holdings: list[dict[str, Any]] = field(default_factory=list)  # mode build : titres construits (symbole, poids, preuves)
-    parameters: list[dict[str, Any]] = field(default_factory=list)  # mode build : paramètres utilisés (libellé, valeur, origine)
+    names: dict[str, str] = field(default_factory=dict)
+    holdings: list[dict[str, Any]] = field(default_factory=list)
+    parameters: list[dict[str, Any]] = field(default_factory=list)
 
     def shown(self, tickers: list[str]) -> list[str]:
         """Noms à afficher : la catégorie à la place du symbole d'approximation."""
@@ -93,10 +93,8 @@ class EngineResult:
     sources: list[dict[str, Any]]
     macro_usage: list[dict[str, Any]]
     warnings: list[str]
-    compare_requested: bool = False  # mandat.compareCategory présent (R4)
+    compare_requested: bool = False
 
-
-# --- valorisation ---------------------------------------------------------
 
 
 def holding_values_cad(store: DataStore, holdings: list[dict[str, Any]], as_of: pd.Timestamp) -> tuple[dict[str, float], list[str]]:
@@ -176,8 +174,6 @@ def _weights(positions: dict[str, float]) -> dict[str, float]:
     return {t: v / total * 100.0 for t, v in positions.items()} if total else {}
 
 
-# --- comparaison par catégorie --------------------------------------------
-
 
 def _crypto_refused(mandate: dict[str, Any]) -> bool:
     preferences = mandate.get("preferences") or {}
@@ -242,8 +238,6 @@ def comparison_operations(mandate: dict[str, Any], comparison: Comparison) -> li
             operations.append({**op, "ticker": comparison.proxy})
     return operations if replaced else None
 
-
-# --- moteur ---------------------------------------------------------------
 
 
 def _analysis_window(store: DataStore) -> tuple[pd.Timestamp, pd.Timestamp]:
@@ -521,7 +515,6 @@ def run_engine(
         publication = None
         if "publication_date" in rows.columns and not rows.empty:
             publication = rows["publication_date"].max()
-        # R10 : la dernière valeur utilisée doit être publiée avant la date d'analyse (asOf).
         macro_usage.append({"seriesId": series_id, "usedUpTo": used_up_to, "publication": publication, "asOf": end})
 
     for period_id, period in periods.items():
@@ -586,7 +579,6 @@ def run_engine(
         asset_evidence[ticker] = _record_asset_metrics(store, registry, ticker, start, end)
     for scenario in scenarios:
         if scenario.index == 2:
-            # Le FNB d'approximation n'est pas un titre du mandat : ses preuves portent le nom de la catégorie.
             category_evidence = _record_asset_metrics(store, registry, comparison.proxy, start, end, category=comparison)
             for asset in scenario.idea_assets:
                 asset["evidence"] = category_evidence.get("volatility")
@@ -672,8 +664,6 @@ def public_scenarios(result: EngineResult, verdicts_by_scenario: dict[int, str])
             item["holdings"] = scenario.holdings
         if scenario.parameters:
             item["parameters"] = scenario.parameters
-        # scenario.notes (données manquantes) vont dans run.explanation.limitations :
-        # schema-scenario n'a pas de champ pour elles.
         store_free.append(item)
     return store_free
 

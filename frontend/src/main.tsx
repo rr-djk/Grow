@@ -6,7 +6,6 @@ import { LangProvider } from "./lib/i18n";
 import { AppProvider } from "./lib/store";
 import "./styles.css";
 
-/* Derrière le proxy de l'IDE (…/proxy/4173/), les routes vivent sous ce préfixe. Ailleurs : racine. */
 const basename = window.location.pathname.match(/^\/(?:abs)?proxy\/\d+/)?.[0] ?? "/";
 
 createRoot(document.getElementById("root")!).render(

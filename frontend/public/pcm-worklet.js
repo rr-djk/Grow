@@ -1,6 +1,3 @@
-// AudioWorklet de la saisie vocale : regroupe les échantillons Float32 du micro (mono, fréquence
-// native de l'AudioContext) en blocs d'environ 85 ms et les envoie au fil principal, qui les
-// rééchantillonne à 16 kHz (src/lib/speech.ts). Aucune logique de reconnaissance ici.
 class PcmWorklet extends AudioWorkletProcessor {
   constructor() {
     super();

@@ -56,7 +56,6 @@ def handle_request(event: dict[str, Any], *, store: DataStore | None = None,
             error.request_id = request_id
         return error_response(error)
     except Exception as exc:
-        # Aucun détail interne dans la réponse (ARN, noms de tables) : CloudWatch seulement.
         log_event("request.error", requestId=request_id, route=event.get("routeKey"), error=type(exc).__name__)
         return error_response(ApiError("INTERNAL", "Erreur interne.", request_id))
 

@@ -19,7 +19,6 @@ import { useApp } from "../lib/store";
 import { cad, localeDateTime, pct, plainPct, todayLong } from "../lib/format";
 import CloseAccount from "../components/CloseAccount";
 
-/* Questionnaire interactif : consultation des réponses enregistrées, modification, résultat par portefeuille. */
 function RiskQuestionnaire({ userId }: { userId: string }) {
   const { lang, L } = useT();
   const [latest, setLatest] = useState<PortfolioRisk | null>(() => loadLatestRisk(userId));
@@ -30,7 +29,6 @@ function RiskQuestionnaire({ userId }: { userId: string }) {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Les portefeuilles créés après le dernier questionnaire reçoivent le dernier résultat.
   useEffect(() => {
     listPortfolios()
       .then(({ items }) => { setPortfolios(items); setStored(syncRisk(userId, items.map((p) => p.portfolioId))); })
@@ -102,7 +100,6 @@ function RiskQuestionnaire({ userId }: { userId: string }) {
 }
 
 const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
-/** Jauge 1 à 5 en segments (tolérance, capacité). */
 function Meter({ value }: { value: number | null | undefined }) {
   const { lang, L } = useT();
   return (
@@ -119,13 +116,11 @@ function horizonText(p: InvestorProfile, L: (fr: string, en: string) => string) 
   if (p.horizonMaxYears != null) return p.horizonMinYears === p.horizonMaxYears ? L(`${p.horizonMinYears} ans`, `${p.horizonMinYears} years`) : L(`${p.horizonMinYears} à ${p.horizonMaxYears} ans`, `${p.horizonMinYears} to ${p.horizonMaxYears} years`);
   return L(`${p.horizonMinYears} ans et plus`, `${p.horizonMinYears} years or more`);
 }
-/** Objectif : les réponses types du questionnaire sont traduites, un texte libre reste tel quel. */
 function objectiveText(objective: string, lang: "fr" | "en") {
   const goal = QUESTIONS.find((q) => q.id === "goal")!;
   const i = goal.options.indexOf(objective);
   return i >= 0 ? qOptions(goal, lang)[i] : objective;
 }
-/** Carte portefeuille : valeur, variation, risque et répartition lus dans le résumé du back (GET summary). */
 function PortfolioCard() {
   const { lang, L } = useT();
   const [state, setState] = useState<{ summary: PortfolioSummary | null; name?: string; loading: boolean }>({ summary: null, loading: true });
@@ -211,7 +206,7 @@ export default function Profile() {
     if (!Number.isInteger(tol) || tol < 1 || tol > 5) return setErr(L("Choisissez votre tolérance à la perte.", "Choose your loss tolerance."));
     if (!Number.isInteger(cap) || cap < 1 || cap > 5) return setErr(L("Choisissez votre capacité à encaisser une perte.", "Choose your capacity to absorb a loss."));
     const body: InvestorProfile = {
-      riskTolerance: tol, riskCapacity: cap, // v0.4.6 : une seule échelle 1 à 5 ; riskLevel n'est plus envoyé
+      riskTolerance: tol, riskCapacity: cap,
       ...(province ? { province } : {}),
       horizonMinYears: min, ...(max !== undefined ? { horizonMaxYears: max } : {}),
       objective: objective.trim(), constraints: lines(constraints),

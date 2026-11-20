@@ -2,8 +2,6 @@ import { useId } from "react";
 import { ASSET_CLASSES, assetClassName } from "../lib/assetClasses";
 import { useT } from "../lib/i18n";
 
-/* Classes d'actifs à exclure : puces à cocher, plusieurs choix possibles (remplace l'ancienne zone de texte libre).
- * Une valeur déjà enregistrée qui n'est pas un code connu reste visible et décochable, pour ne rien perdre. */
 export default function AssetClassPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const { lang, L } = useT();
   const name = useId();
