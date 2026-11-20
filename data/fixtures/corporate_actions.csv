@@ -1,6 +1,0 @@
-ex_date,ticker,action,value,unit
-2022-08-22,CNQ.TO,dividend,0.75,CAD per share
-2022-08-22,CNQ.TO,split,1.021,split ratio (new:old)
-2022-09-15,CNQ.TO,dividend,0.375,CAD per share
-2022-07-25,RY.TO,dividend,1.28,CAD per share
-2022-09-16,SPY,dividend,1.596,USD per share

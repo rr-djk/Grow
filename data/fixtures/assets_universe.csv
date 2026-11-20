@@ -1,4 +1,0 @@
-asset_id,ticker,name,asset_class,market,currency,sector
-A01,RY.TO,Royal Bank of Canada,equity,TSX,CAD,Financials
-A02,CNQ.TO,Canadian Natural Resources,equity,TSX,CAD,Energy
-A03,SPY,SPDR S&P 500 ETF Trust,etf_equity,NYSE Arca,USD,Broad market (U.S.)
