@@ -1,0 +1,15 @@
+title = "Grow"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''graphify-out/cache/''',
+]
+
+commits = [
+  "0468e9ccaccf419d6aa2b661d47d7d2ee015755c",
+  "55724234229fda3fcffe3618f16f4601301ddc82",
+  "e02f62e0071eb27bc6ddbf6fc652e80f3326b391",
+]
