@@ -14,3 +14,5 @@ Datathon PolyFinances 2026 pour lequel il a été créé.
 
 Ces deux avertissements seront retirés quand la restructuration sera
 terminée.
+
+Licence : MIT - voir [LICENSE](LICENSE).
